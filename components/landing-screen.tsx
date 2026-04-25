@@ -26,31 +26,26 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
       label: "MANUAL",
       sublabel: "Play Game",
       description: "Toggle switches yourself",
-      color: "green",
-      angle: -30,
     },
     {
       id: "bfs",
       label: "BFS",
       sublabel: "Breadth-First",
       description: "Explore all states",
-      color: "blue",
-      angle: 0,
     },
     {
       id: "divide",
       label: "D&C",
       sublabel: "Divide & Conquer",
       description: "Recursive decomposition",
-      color: "red",
-      angle: 30,
     },
   ] as const;
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center h-screen overflow-hidden">
-      {/* Radial gradient overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.4)_70%,rgba(0,0,0,0.8)_100%)]" />
+      {/* Warm radial gradient overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(180,130,60,0.08)_0%,transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.5)_80%)]" />
 
       {/* Floating particles */}
       <FloatingParticles />
@@ -60,49 +55,50 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
         {/* Animated switch display - the hero */}
         <div
           className={cn(
-            "relative mb-8 transition-all duration-1000",
+            "relative mb-10 transition-all duration-1000",
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}
         >
           <HeroSwitches activeSwitch={activeSwitch} />
         </div>
 
-        {/* Title with glitch effect */}
+        {/* Title */}
         <div
           className={cn(
-            "text-center mb-12 transition-all duration-1000 delay-200",
+            "text-center mb-14 transition-all duration-1000 delay-200",
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}
         >
           <div className="relative">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
               <span className="relative inline-block">
-                <span className="absolute inset-0 text-neon-green blur-sm opacity-50">
+                <span className="absolute inset-0 text-gold blur-md opacity-40">
                   SWITCH
                 </span>
-                <span className="relative text-neon-green drop-shadow-[0_0_30px_rgba(0,255,136,0.6)]">
+                <span className="relative text-gold drop-shadow-[0_0_25px_rgba(210,170,90,0.5)]">
                   SWITCH
                 </span>
               </span>
-              <span className="text-foreground/90 ml-3">SIM</span>
+              <span className="text-foreground/80 ml-3 font-light">SIM</span>
             </h1>
-            <p className="mt-3 text-muted-foreground/80 text-sm tracking-[0.3em] uppercase font-mono">
+            <p className="mt-4 text-muted-foreground text-xs tracking-[0.35em] uppercase font-mono">
               Algorithm Visualization System
             </p>
           </div>
         </div>
 
-        {/* Mode selection - floating cards */}
+        {/* Mode selection - elegant buttons */}
         <div
           className={cn(
-            "flex items-center justify-center gap-6 md:gap-10 transition-all duration-1000 delay-500",
+            "flex items-center justify-center gap-4 md:gap-6 transition-all duration-1000 delay-500",
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}
         >
-          {modes.map((mode) => (
+          {modes.map((mode, index) => (
             <ModeButton
               key={mode.id}
               mode={mode}
+              index={index}
               isHovered={hoveredMode === mode.id}
               onHover={() => setHoveredMode(mode.id)}
               onLeave={() => setHoveredMode(null)}
@@ -112,27 +108,20 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
         </div>
 
         {/* Hover info display */}
-        <div className="h-12 mt-8 flex items-center justify-center">
+        <div className="h-10 mt-8 flex items-center justify-center">
           {hoveredMode && (
-            <p className="text-muted-foreground text-sm font-mono animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <p className="text-amber/70 text-sm font-mono animate-in fade-in slide-in-from-bottom-2 duration-200">
               {modes.find((m) => m.id === hoveredMode)?.description}
             </p>
           )}
         </div>
       </div>
 
-      {/* Bottom decorative line */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3">
-        <div className="w-16 h-px bg-gradient-to-r from-transparent to-border" />
-        <div className="flex gap-1">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="w-1 h-1 rounded-full bg-muted-foreground/40"
-            />
-          ))}
-        </div>
-        <div className="w-16 h-px bg-gradient-to-l from-transparent to-border" />
+      {/* Bottom decorative element */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4">
+        <div className="w-20 h-px bg-gradient-to-r from-transparent via-gold-dim/30 to-transparent" />
+        <div className="w-1.5 h-1.5 rounded-full bg-gold/40" />
+        <div className="w-20 h-px bg-gradient-to-r from-transparent via-gold-dim/30 to-transparent" />
       </div>
     </div>
   );
@@ -143,16 +132,16 @@ function HeroSwitches({ activeSwitch }: { activeSwitch: number }) {
 
   return (
     <div className="relative">
-      {/* Glow backdrop */}
-      <div className="absolute inset-0 blur-3xl opacity-30 bg-neon-green rounded-full scale-150" />
+      {/* Warm glow backdrop */}
+      <div className="absolute inset-0 blur-3xl opacity-20 bg-gold rounded-full scale-150" />
 
       {/* Switch container */}
-      <div className="relative flex items-center gap-3 md:gap-4 p-6 md:p-8 rounded-2xl bg-card/30 backdrop-blur-xl border border-border/50">
+      <div className="relative flex items-center gap-4 md:gap-5 p-8 md:p-10 rounded-2xl bg-card/40 backdrop-blur-xl border border-gold/10">
         {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-neon-green/50 rounded-tl-lg" />
-        <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-neon-green/50 rounded-tr-lg" />
-        <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-neon-green/50 rounded-bl-lg" />
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-neon-green/50 rounded-br-lg" />
+        <div className="absolute top-0 left-0 w-5 h-5 border-l border-t border-gold/30 rounded-tl-xl" />
+        <div className="absolute top-0 right-0 w-5 h-5 border-r border-t border-gold/30 rounded-tr-xl" />
+        <div className="absolute bottom-0 left-0 w-5 h-5 border-l border-b border-gold/30 rounded-bl-xl" />
+        <div className="absolute bottom-0 right-0 w-5 h-5 border-r border-b border-gold/30 rounded-br-xl" />
 
         {switches.map((isOn, i) => {
           const isActive = i === activeSwitch;
@@ -162,34 +151,34 @@ function HeroSwitches({ activeSwitch }: { activeSwitch: number }) {
             <div
               key={i}
               className={cn(
-                "relative w-10 h-10 md:w-12 md:h-12 rounded-full",
+                "relative w-11 h-11 md:w-14 md:h-14 rounded-full",
                 "flex items-center justify-center",
-                "transition-all duration-300",
+                "transition-all duration-500 ease-out",
                 currentState
-                  ? "bg-neon-green/20 shadow-[0_0_20px_rgba(0,255,136,0.5)]"
-                  : "bg-neon-red/10",
+                  ? "bg-gold/15 shadow-[0_0_25px_rgba(210,170,90,0.35)]"
+                  : "bg-gold-dim/5",
                 isActive && "scale-110"
               )}
             >
               {/* Ring */}
               <div
                 className={cn(
-                  "absolute inset-0 rounded-full border-2 transition-colors duration-300",
-                  currentState ? "border-neon-green" : "border-neon-red/50"
+                  "absolute inset-0 rounded-full border transition-all duration-500",
+                  currentState ? "border-gold/60" : "border-gold-dim/20"
                 )}
               />
               {/* Inner dot */}
               <div
                 className={cn(
-                  "w-4 h-4 md:w-5 md:h-5 rounded-full transition-all duration-300",
+                  "w-5 h-5 md:w-6 md:h-6 rounded-full transition-all duration-500",
                   currentState
-                    ? "bg-neon-green shadow-[0_0_12px_rgba(0,255,136,0.8)]"
-                    : "bg-neon-red/60"
+                    ? "bg-gold shadow-[0_0_15px_rgba(210,170,90,0.7)]"
+                    : "bg-gold-dim/30"
                 )}
               />
               {/* Pulse effect for active */}
-              {isActive && (
-                <div className="absolute inset-0 rounded-full border-2 border-neon-green animate-ping opacity-50" />
+              {isActive && currentState && (
+                <div className="absolute inset-0 rounded-full border border-gold/50 animate-ping opacity-40" />
               )}
             </div>
           );
@@ -197,7 +186,7 @@ function HeroSwitches({ activeSwitch }: { activeSwitch: number }) {
       </div>
 
       {/* Label */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-muted-foreground/60 tracking-widest">
+      <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-[9px] font-mono text-gold-dim/50 tracking-[0.3em]">
         LIVE PREVIEW
       </div>
     </div>
@@ -206,6 +195,7 @@ function HeroSwitches({ activeSwitch }: { activeSwitch: number }) {
 
 function ModeButton({
   mode,
+  index,
   isHovered,
   onHover,
   onLeave,
@@ -215,91 +205,53 @@ function ModeButton({
     id: string;
     label: string;
     sublabel: string;
-    color: string;
-    angle: number;
   };
+  index: number;
   isHovered: boolean;
   onHover: () => void;
   onLeave: () => void;
   onClick: () => void;
 }) {
-  const colorClasses = {
-    green: {
-      bg: "bg-neon-green/10",
-      border: "border-neon-green/30",
-      text: "text-neon-green",
-      glow: "shadow-[0_0_30px_rgba(0,255,136,0.4)]",
-      hoverBg: "hover:bg-neon-green/20",
-    },
-    blue: {
-      bg: "bg-neon-blue/10",
-      border: "border-neon-blue/30",
-      text: "text-neon-blue",
-      glow: "shadow-[0_0_30px_rgba(100,150,255,0.4)]",
-      hoverBg: "hover:bg-neon-blue/20",
-    },
-    red: {
-      bg: "bg-neon-red/10",
-      border: "border-neon-red/30",
-      text: "text-neon-red",
-      glow: "shadow-[0_0_30px_rgba(255,100,100,0.4)]",
-      hoverBg: "hover:bg-neon-red/20",
-    },
-  };
-
-  const colors = colorClasses[mode.color as keyof typeof colorClasses];
-
   return (
     <button
       onClick={onClick}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       className={cn(
-        "group relative flex flex-col items-center gap-2 p-5 md:p-6 rounded-xl",
-        "border backdrop-blur-sm transition-all duration-300",
-        colors.bg,
-        colors.border,
-        colors.hoverBg,
-        isHovered && colors.glow,
+        "group relative flex flex-col items-center gap-2 px-6 py-5 md:px-8 md:py-6 rounded-xl",
+        "border border-gold/10 backdrop-blur-sm transition-all duration-400 ease-out",
+        "bg-card/30",
+        isHovered && "bg-gold/10 border-gold/30 shadow-[0_0_40px_rgba(210,170,90,0.2)]",
         isHovered ? "scale-105 -translate-y-1" : "scale-100"
       )}
       style={{
-        transform: `rotate(${isHovered ? 0 : mode.angle * 0.1}deg) ${
-          isHovered ? "scale(1.05) translateY(-4px)" : ""
-        }`,
+        transitionDelay: `${index * 30}ms`,
       }}
     >
       {/* Main label */}
       <span
         className={cn(
-          "text-2xl md:text-3xl font-bold tracking-tight transition-all duration-300",
-          colors.text,
-          isHovered && "drop-shadow-[0_0_10px_currentColor]"
+          "text-xl md:text-2xl font-semibold tracking-wide transition-all duration-300",
+          isHovered ? "text-gold drop-shadow-[0_0_12px_rgba(210,170,90,0.6)]" : "text-foreground/80"
         )}
       >
         {mode.label}
       </span>
 
       {/* Sublabel */}
-      <span className="text-[10px] md:text-xs font-mono text-muted-foreground tracking-wider uppercase">
+      <span className={cn(
+        "text-[10px] md:text-xs font-mono tracking-wider uppercase transition-colors duration-300",
+        isHovered ? "text-amber/60" : "text-muted-foreground/50"
+      )}>
         {mode.sublabel}
       </span>
 
-      {/* Hover indicator */}
+      {/* Hover line indicator */}
       <div
         className={cn(
-          "absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full transition-all duration-300",
-          isHovered ? `${colors.bg} opacity-100` : "opacity-0"
+          "absolute -bottom-px left-1/2 -translate-x-1/2 h-px rounded-full transition-all duration-400",
+          isHovered ? "w-12 bg-gold/60" : "w-0 bg-transparent"
         )}
-        style={{
-          background: isHovered
-            ? mode.color === "green"
-              ? "rgba(0,255,136,0.6)"
-              : mode.color === "blue"
-              ? "rgba(100,150,255,0.6)"
-              : "rgba(255,100,100,0.6)"
-            : "transparent",
-        }}
       />
     </button>
   );
@@ -308,28 +260,28 @@ function ModeButton({
 function FloatingParticles() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 20 }).map((_, i) => (
+      {Array.from({ length: 15 }).map((_, i) => (
         <div
           key={i}
-          className="absolute w-1 h-1 rounded-full bg-neon-green/30"
+          className="absolute w-1 h-1 rounded-full bg-gold/20"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animation: `float ${5 + Math.random() * 10}s ease-in-out infinite`,
+            left: `${10 + Math.random() * 80}%`,
+            top: `${10 + Math.random() * 80}%`,
+            animation: `floatGold ${8 + Math.random() * 12}s ease-in-out infinite`,
             animationDelay: `${Math.random() * 5}s`,
           }}
         />
       ))}
       <style jsx>{`
-        @keyframes float {
+        @keyframes floatGold {
           0%,
           100% {
             transform: translateY(0) translateX(0) scale(1);
-            opacity: 0.3;
+            opacity: 0.15;
           }
           50% {
-            transform: translateY(-20px) translateX(10px) scale(1.5);
-            opacity: 0.6;
+            transform: translateY(-15px) translateX(8px) scale(1.3);
+            opacity: 0.35;
           }
         }
       `}</style>
