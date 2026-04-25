@@ -8,72 +8,66 @@ interface LandingScreenProps {
 
 export function LandingScreen({ onSelectMode }: LandingScreenProps) {
   return (
-    <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-8">
+    <div className="relative z-10 flex flex-col items-center justify-center h-screen p-6 overflow-hidden">
       {/* Hero section */}
-      <div className="text-center mb-16 space-y-6">
-        {/* Decorative elements */}
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="w-12 h-[2px] bg-gradient-to-r from-transparent to-neon-green" />
-          <div className="w-3 h-3 rounded-full bg-neon-green shadow-[0_0_15px_rgba(0,255,136,0.8)] animate-pulse" />
-          <div className="w-12 h-[2px] bg-gradient-to-l from-transparent to-neon-green" />
+      <div className="text-center mb-10 space-y-3">
+        {/* Decorative line */}
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="w-8 h-px bg-gradient-to-r from-transparent to-neon-green/60" />
+          <div className="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(0,255,136,0.7)] animate-pulse" />
+          <div className="w-8 h-px bg-gradient-to-l from-transparent to-neon-green/60" />
         </div>
 
         {/* Title */}
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-          <span className="text-neon-green drop-shadow-[0_0_30px_rgba(0,255,136,0.5)]">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-balance">
+          <span className="text-neon-green drop-shadow-[0_0_20px_rgba(0,255,136,0.4)]">
             Security
-          </span>
-          <br />
+          </span>{" "}
           <span className="text-foreground">Switch Simulator</span>
         </h1>
 
         {/* Subtitle */}
-        <p className="text-muted-foreground text-lg md:text-xl max-w-md mx-auto leading-relaxed">
+        <p className="text-muted-foreground text-sm md:text-base max-w-sm mx-auto">
           Optimize switch operations using advanced algorithms
         </p>
 
         {/* Status indicator */}
-        <div className="flex items-center justify-center gap-2 text-sm font-mono">
-          <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-          <span className="text-neon-green/80">SYSTEM ONLINE</span>
+        <div className="flex items-center justify-center gap-1.5 text-xs font-mono pt-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+          <span className="text-neon-green/70 tracking-wider">SYSTEM ONLINE</span>
         </div>
       </div>
 
       {/* Mode selection cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl w-full px-2">
         <ModeCard
           title="Play Game"
-          description="Interactive puzzle mode. Toggle switches manually to find the optimal solution."
+          description="Toggle switches manually to find the optimal solution."
           icon={<GamepadIcon />}
           glowColor="green"
           onClick={() => onSelectMode("play")}
         />
         <ModeCard
-          title="Brute Force (BFS)"
-          description="Visualize the Breadth-First Search algorithm exploring all possible states."
+          title="BFS Algorithm"
+          description="Visualize Breadth-First Search exploring all states."
           icon={<NetworkIcon />}
           glowColor="blue"
           onClick={() => onSelectMode("bfs")}
         />
         <ModeCard
           title="Divide & Conquer"
-          description="Watch the divide and conquer approach break down the problem recursively."
+          description="Watch recursive problem decomposition in action."
           icon={<SplitIcon />}
           glowColor="red"
           onClick={() => onSelectMode("divide")}
         />
       </div>
 
-      {/* Footer info */}
-      <div className="mt-16 text-center space-y-2">
-        <p className="text-xs font-mono text-muted-foreground/60 uppercase tracking-widest">
-          Powered by Advanced Algorithm Visualization
+      {/* Footer */}
+      <div className="mt-8 text-center">
+        <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest">
+          Algorithm Visualization Demo
         </p>
-        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground/40">
-          <span>v1.0.0</span>
-          <span>•</span>
-          <span>University Demo</span>
-        </div>
       </div>
     </div>
   );

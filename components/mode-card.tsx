@@ -36,17 +36,17 @@ export function ModeCard({
       interactive
       glowColor={glowColor}
       onClick={onClick}
-      className="p-8 flex flex-col items-center text-center gap-4 min-h-[280px]"
+      className="p-5 flex flex-col items-center text-center gap-3"
     >
       {/* Icon container */}
       <div
         className={cn(
-          "w-20 h-20 rounded-2xl flex items-center justify-center",
+          "w-12 h-12 rounded-xl flex items-center justify-center",
           "bg-secondary/50 border border-glass-border",
           "transition-transform duration-300 group-hover:scale-110"
         )}
       >
-        <div className={cn("w-10 h-10", iconColor[glowColor], iconGlow[glowColor])}>
+        <div className={cn("w-6 h-6", iconColor[glowColor], iconGlow[glowColor])}>
           {icon}
         </div>
       </div>
@@ -54,7 +54,7 @@ export function ModeCard({
       {/* Title */}
       <h3
         className={cn(
-          "text-xl font-bold tracking-wide",
+          "text-base font-semibold tracking-wide",
           iconColor[glowColor],
           iconGlow[glowColor]
         )}
@@ -63,21 +63,21 @@ export function ModeCard({
       </h3>
 
       {/* Description */}
-      <p className="text-muted-foreground text-sm leading-relaxed">
+      <p className="text-muted-foreground text-xs leading-relaxed">
         {description}
       </p>
 
       {/* Enter indicator */}
       <div
         className={cn(
-          "mt-auto pt-4 flex items-center gap-2 text-sm font-mono",
+          "mt-auto pt-2 flex items-center gap-1.5 text-[10px] font-mono",
           iconColor[glowColor],
-          "opacity-60 group-hover:opacity-100 transition-opacity"
+          "opacity-50 group-hover:opacity-100 transition-opacity"
         )}
       >
         <span>ENTER</span>
         <svg
-          className="w-4 h-4"
+          className="w-3 h-3"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
