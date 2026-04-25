@@ -12,11 +12,13 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
-      <AnimatedGrid />
+      {/* Only show animated grid in game mode */}
+      {selectedMode !== null && <AnimatedGrid />}
 
-      {/* Gradient overlays for depth */}
-      <div className="fixed inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none z-0" />
-      <div className="fixed inset-0 bg-gradient-to-r from-neon-green/5 via-transparent to-neon-blue/5 pointer-events-none z-0" />
+      {/* Gradient overlay for game mode depth */}
+      {selectedMode !== null && (
+        <div className="fixed inset-0 bg-gradient-to-b from-transparent via-background/30 to-background pointer-events-none z-0" />
+      )}
 
       {/* Content */}
       <div className="relative z-10">
