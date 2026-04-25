@@ -25,7 +25,7 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
       id: "play",
       label: "MANUAL",
       sublabel: "Play Game",
-      description: "Toggle switches yourself",
+      description: "Turn off all switches manually",
     },
     {
       id: "bfs",
@@ -128,7 +128,7 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
 }
 
 function HeroSwitches({ activeSwitch }: { activeSwitch: number }) {
-  const switches = [false, true, false, true, false];
+  const switches = [true, true, true, true, true];
 
   return (
     <div className="relative">

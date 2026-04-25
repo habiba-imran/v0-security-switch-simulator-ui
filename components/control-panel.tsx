@@ -29,75 +29,97 @@ export function ControlPanel({
   progress,
 }: ControlPanelProps) {
   return (
-    <GlassCard className="p-6 space-y-6" glowColor="blue">
+    <GlassCard className="p-8 space-y-10 border-white/10" glowColor="blue">
+      <div className="flex items-center justify-between border-b border-white/5 pb-6">
+        <h2 className="text-base font-bold tracking-[0.2em] uppercase text-white/90">
+          Control Center
+        </h2>
+        <div className="w-3 h-3 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_rgba(88,166,255,0.8)]" />
+      </div>
+
       {/* Step counter */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-            Step Counter
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Mission Progress
           </span>
-          <span className="text-neon-blue font-mono text-sm">
-            {step} / {totalSteps}
+          <span className="text-neon-blue font-mono text-xl font-bold">
+            {step} <span className="text-muted-foreground/50 mx-1">/</span> {totalSteps}
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+        <div className="h-2 bg-white/5 rounded-full overflow-hidden p-[1px]">
           <div
-            className="h-full bg-gradient-to-r from-neon-blue to-neon-green transition-all duration-300 rounded-full"
+            className="h-full bg-gradient-to-r from-neon-blue via-neon-green to-neon-blue bg-[length:200%_100%] animate-gradient transition-all duration-500 rounded-full shadow-[0_0_15px_rgba(88,166,255,0.4)]"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       {/* Status text */}
-      <div className="space-y-2">
-        <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-          Status
+      <div className="space-y-4">
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+          System Status
         </span>
-        <div className="p-3 bg-secondary/50 rounded-lg border border-glass-border">
-          <p className="text-sm font-mono text-neon-green">{statusText}</p>
+        <div className="p-5 bg-white/[0.03] rounded-xl border border-white/5 backdrop-blur-sm shadow-inner">
+          <p className="text-base font-medium text-neon-green whitespace-pre-line leading-relaxed">
+            {statusText}
+          </p>
         </div>
       </div>
 
       {/* Algorithm info */}
-      <div className="space-y-2">
-        <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-          Algorithm
+      <div className="space-y-4">
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+          Operation Rules
         </span>
-        <div className="p-3 bg-secondary/50 rounded-lg border border-glass-border">
-          <p className="text-xs text-muted-foreground leading-relaxed">
+        <div className="p-6 bg-white/[0.03] rounded-xl border border-neon-blue/20 shadow-[0_0_20px_rgba(88,166,255,0.05)]">
+          <p className="text-sm text-white/70 leading-relaxed whitespace-pre-line font-medium tracking-tight">
             {algorithmInfo}
           </p>
         </div>
       </div>
 
       {/* Control buttons */}
-      <div className="grid grid-cols-4 gap-2">
-        <ControlButton
-          icon={
-            isPlaying ? (
-              <PauseIcon className="w-4 h-4" />
-            ) : (
-              <PlayIcon className="w-4 h-4" />
-            )
-          }
-          onClick={isPlaying ? onPause : onPlay}
-          active={isPlaying}
-        />
-        <ControlButton
-          icon={<StepIcon className="w-4 h-4" />}
-          onClick={onStep}
-          disabled={isPlaying}
-        />
-        <ControlButton
-          icon={<ResetIcon className="w-4 h-4" />}
-          onClick={onReset}
-        />
-        <ControlButton
-          icon={<SettingsIcon className="w-4 h-4" />}
-          onClick={() => {}}
-        />
+      <div className="grid grid-cols-3 gap-4 pt-4">
+        <div className="flex flex-col items-center gap-3">
+          <ControlButton
+            icon={
+              isPlaying ? (
+                <PauseIcon className="w-6 h-6" />
+              ) : (
+                <PlayIcon className="w-6 h-6" />
+              )
+            }
+            onClick={isPlaying ? onPause : onPlay}
+            active={isPlaying}
+          />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+            {isPlaying ? "Pause" : "Auto Play"}
+          </span>
+        </div>
+        
+        <div className="flex flex-col items-center gap-3">
+          <ControlButton
+            icon={<StepIcon className="w-6 h-6" />}
+            onClick={onStep}
+            disabled={isPlaying}
+          />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+            Next Step
+          </span>
+        </div>
+
+        <div className="flex flex-col items-center gap-3">
+          <ControlButton
+            icon={<ResetIcon className="w-6 h-6" />}
+            onClick={onReset}
+          />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+            Reset Array
+          </span>
+        </div>
       </div>
     </GlassCard>
   );

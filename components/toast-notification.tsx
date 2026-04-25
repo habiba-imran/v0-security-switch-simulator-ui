@@ -18,15 +18,15 @@ export function ToastNotification({
 }: ToastNotificationProps) {
   useEffect(() => {
     if (isVisible) {
-      const timer = setTimeout(onClose, 3000);
+      const timer = setTimeout(onClose, 5000);
       return () => clearTimeout(timer);
     }
   }, [isVisible, onClose]);
 
   const typeStyles = {
-    success: "bg-neon-green/20 border-neon-green/50 text-neon-green",
-    error: "bg-neon-red/20 border-neon-red/50 text-neon-red",
-    info: "bg-neon-blue/20 border-neon-blue/50 text-neon-blue",
+    success: "bg-neon-green/20 border-neon-green/50 text-neon-green shadow-[0_0_30px_rgba(0,255,136,0.2)]",
+    error: "bg-neon-red/20 border-neon-red/50 text-neon-red shadow-[0_0_30px_rgba(255,88,88,0.2)]",
+    info: "bg-neon-blue/20 border-neon-blue/50 text-neon-blue shadow-[0_0_30px_rgba(88,166,255,0.2)]",
   };
 
   const iconStyles = {
@@ -38,9 +38,9 @@ export function ToastNotification({
   return (
     <div
       className={cn(
-        "fixed bottom-6 right-6 z-50",
-        "px-5 py-3 rounded-xl border backdrop-blur-xl",
-        "flex items-center gap-3",
+        "fixed bottom-8 right-8 z-50",
+        "px-6 py-4 rounded-xl border backdrop-blur-xl",
+        "flex items-center gap-4 min-w-[300px] max-w-md",
         "transition-all duration-300 ease-out",
         typeStyles[type],
         isVisible
@@ -48,18 +48,18 @@ export function ToastNotification({
           : "opacity-0 translate-y-4 pointer-events-none"
       )}
     >
-      <span className={cn("w-5 h-5", iconStyles[type])}>
+      <span className={cn("w-6 h-6 shrink-0", iconStyles[type])}>
         {type === "success" && <CheckIcon />}
         {type === "error" && <XIcon />}
         {type === "info" && <InfoIcon />}
       </span>
-      <span className="text-sm font-mono">{message}</span>
+      <span className="text-base font-semibold leading-snug">{message}</span>
       <button
         onClick={onClose}
-        className="ml-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
+        className="ml-auto p-1.5 rounded-lg hover:bg-white/10 transition-colors"
         aria-label="Close notification"
       >
-        <XIcon className="w-4 h-4" />
+        <XIcon className="w-5 h-5" />
       </button>
     </div>
   );
