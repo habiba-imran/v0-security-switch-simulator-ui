@@ -1,15 +1,15 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Syne } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const spaceGrotesk = Space_Grotesk({ 
+const inter = Inter({ 
   subsets: ["latin"],
-  variable: "--font-space",
+  variable: "--font-inter",
 });
-const syne = Syne({ 
+const jetbrainsMono = JetBrains_Mono({ 
   subsets: ["latin"],
-  variable: "--font-syne",
+  variable: "--font-jetbrains",
 });
 
 export const metadata: Metadata = {
@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${syne.variable} bg-background`}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} bg-background`}>
       <body className="font-sans antialiased min-h-screen bg-background">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
