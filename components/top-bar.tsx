@@ -5,34 +5,30 @@ import { GlassCard } from "./glass-card";
 
 interface TopBarProps {
   title: string;
-  info: string;
   onBack: () => void;
-  switchCount: number;
-  onSwitchCountChange: (count: number) => void;
-  onStart: () => void;
-  onReset: () => void;
-  isRunning: boolean;
+  step: number;
+  totalSteps: number;
+  progress: number;
+  statusText: string;
 }
 
 export function TopBar({
   title,
-  info,
   onBack,
-  switchCount,
-  onSwitchCountChange,
-  onStart,
-  onReset,
-  isRunning,
+  step,
+  totalSteps,
+  progress,
+  statusText,
 }: TopBarProps) {
   return (
-    <GlassCard className="p-5 border-white/5 shadow-lg" glowColor="blue">
-      <div className="flex items-center justify-between gap-6 flex-wrap">
-        {/* Back button and title */}
-        <div className="flex items-center gap-8 flex-1">
+    <GlassCard className="p-3 border-white/5 shadow-2xl relative z-50" glowColor="gold">
+      <div className="flex items-center justify-between gap-4">
+        {/* Left Section: Navigation & Title */}
+        <div className="flex items-center gap-5 shrink-0">
           <button
             onClick={onBack}
             className={cn(
-              "p-2.5 rounded-xl border border-white/10 bg-white/5 shrink-0",
+              "p-2 rounded-xl border border-white/10 bg-white/5 shrink-0",
               "transition-all duration-300",
               "hover:bg-white/10 hover:border-white/20 hover:scale-105",
               "active:scale-95"
@@ -54,93 +50,62 @@ export function TopBar({
             </svg>
           </button>
 
-          <div className="flex items-center gap-8 flex-1 min-w-0">
-            <div className="flex flex-col shrink-0">
-              <h1 className="text-sm font-black tracking-tighter text-white/40 uppercase">
-                {title}
-              </h1>
-              <div className="flex items-center gap-2 mt-0.5">
-                <div className="w-4 h-0.5 bg-neon-blue/40 rounded-full" />
-                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Mission Ops
-                </span>
-              </div>
-            </div>
-
-            <div className="w-px h-10 bg-white/5 shrink-0" />
-
-            <div className="flex-1 min-w-0">
-              <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] mb-1 block">Operation Protocol</span>
-              <p className="text-[11px] text-white/60 leading-relaxed line-clamp-2 italic">
-                {info}
-              </p>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-[13px] font-black tracking-tighter text-white/60 uppercase leading-none font-sans">
+              {title}
+            </h1>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="w-4 h-[1px] bg-gold/40" />
+              <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.4em] leading-none font-sans">
+                Mission Ops
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center gap-8">
-          {/* Switch count input */}
-          <div className="flex items-center gap-4 bg-white/[0.03] px-4 py-2 rounded-xl border border-white/5">
-            <label
-              htmlFor="switch-count"
-              className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap"
-            >
-              Array Size
-            </label>
-            <div className="relative group">
-              <input
-                id="switch-count"
-                type="number"
-                min={1}
-                max={10}
-                value={switchCount}
-                onChange={(e) =>
-                  onSwitchCountChange(
-                    Math.min(10, Math.max(1, parseInt(e.target.value) || 1))
-                  )
-                }
-                disabled={isRunning}
-                className={cn(
-                  "w-14 pl-2 pr-1 py-1 rounded-lg bg-black/40 border border-white/10",
-                  "text-center font-mono text-sm font-bold text-neon-blue",
-                  "focus:outline-none focus:border-neon-blue/50 focus:shadow-[0_0_15px_rgba(88,166,255,0.2)]",
-                  "transition-all duration-300",
-                  isRunning && "opacity-30 cursor-not-allowed"
-                )}
-              />
-              <div className="absolute inset-0 rounded-lg bg-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        {/* Center/Right Section: Live Data Terminal */}
+        <div className="flex-1 flex items-center gap-6 bg-white/[0.02] border border-white/5 px-4 py-2.5 rounded-xl max-w-4xl min-w-0">
+          
+          {/* Progress Section */}
+          <div className="flex items-center gap-5 shrink-0">
+            <div className="flex flex-col gap-1.5 w-28">
+              <div className="flex items-center justify-between">
+                 <span className="text-[9px] font-black text-white/30 uppercase tracking-widest font-sans">Progress</span>
+                 <span className="text-[10px] font-mono font-bold text-gold/80">{Math.round(progress)}%</span>
+              </div>
+              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-gold/40 to-gold transition-all duration-500 shadow-[0_0_8px_rgba(255,184,0,0.3)]"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="w-px h-6 bg-white/10" />
+
+            <div className="flex items-center gap-5">
+              <div className="flex flex-col items-center min-w-[36px]">
+                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1 font-sans">Step</span>
+                <span className="text-[13px] font-mono font-bold text-white/80 leading-none">{step}</span>
+              </div>
+              <div className="flex flex-col items-center min-w-[36px]">
+                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1 font-sans">Goal</span>
+                <span className="text-[13px] font-mono font-bold text-gold/40 leading-none">{totalSteps}</span>
+              </div>
             </div>
           </div>
 
-          {/* Start/Reset buttons */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onStart}
-              disabled={isRunning}
-              className={cn(
-                "px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-[0.2em]",
-                "bg-neon-green text-background shadow-[0_0_20px_rgba(0,255,136,0.3)]",
-                "transition-all duration-300",
-                "hover:scale-105 hover:shadow-[0_0_30px_rgba(0,255,136,0.5)]",
-                "active:scale-95 disabled:scale-100",
-                isRunning && "opacity-20 cursor-not-allowed grayscale shadow-none"
-              )}
-            >
-              Initialize
-            </button>
-            <button
-              onClick={onReset}
-              className={cn(
-                "px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-[0.2em]",
-                "bg-white/5 border border-white/10 text-white/60",
-                "transition-all duration-300",
-                "hover:bg-white/10 hover:text-white hover:border-white/20",
-                "active:scale-95"
-              )}
-            >
-              Reset
-            </button>
+          <div className="w-px h-8 bg-white/10 shrink-0" />
+
+          {/* Command Section: Maximized Space */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <div className="flex items-center gap-2">
+               <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse shrink-0 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+               <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] font-sans">Command Feed</span>
+            </div>
+            <p className="text-[11px] font-bold text-neon-green/90 italic truncate mt-1 tracking-tight font-mono">
+              {statusText || "Initializing system protocols..."}
+            </p>
           </div>
         </div>
       </div>

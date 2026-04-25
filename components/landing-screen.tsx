@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { GlassCard } from "./glass-card";
 
 interface LandingScreenProps {
   onSelectMode: (mode: "play" | "bfs" | "divide") => void;
@@ -16,112 +17,134 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
     setMounted(true);
     const interval = setInterval(() => {
       setActiveSwitch((prev) => (prev + 1) % 5);
-    }, 800);
+    }, 1200);
     return () => clearInterval(interval);
   }, []);
 
   const modes = [
     {
       id: "play",
-      label: "MANUAL",
-      sublabel: "Play Game",
-      description: "Turn off all switches manually",
+      label: "MANUAL OVERRIDE",
+      sublabel: "Physical switch manipulation",
+      description: "Direct manual control over the security array.",
     },
     {
       id: "bfs",
-      label: "BFS",
-      sublabel: "Breadth-First",
-      description: "Explore all states",
+      label: "BRUTE FORCE ANALYSIS",
+      sublabel: "Exhaustive state exploration",
+      description: "Automated brute force using BFS logic.",
     },
     {
       id: "divide",
-      label: "D&C",
-      sublabel: "Divide & Conquer",
-      description: "Recursive decomposition",
+      label: "D&C RECURSION",
+      sublabel: "Divide & Conquer protocol",
+      description: "Recursive decomposition algorithm.",
     },
   ] as const;
 
   return (
-    <div className="relative z-10 flex flex-col items-center justify-center h-screen overflow-hidden">
-      {/* Warm radial gradient overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(180,130,60,0.08)_0%,transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.5)_80%)]" />
+    <div className="relative min-h-screen flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden">
+      {/* Background elements removed to show AnimatedGrid */}
 
-      {/* Floating particles */}
       <FloatingParticles />
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center">
-        {/* Animated switch display - the hero */}
-        <div
-          className={cn(
-            "relative mb-10 transition-all duration-1000",
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          )}
-        >
-          <HeroSwitches activeSwitch={activeSwitch} />
-        </div>
+      {/* Main Dashboard Container */}
+      <div className={cn(
+        "relative z-10 w-full max-w-6xl flex flex-col lg:flex-row items-start gap-12 lg:gap-24 transition-all duration-700 ease-out",
+        mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      )}>
+        
+        {/* LEFT PANEL: Controls & Navigation */}
+        <div className="flex flex-col gap-10 w-full lg:w-[380px] shrink-0">
+          {/* Hardware Preview Section - Elevated */}
+          <div className="bg-white/[0.01] border border-white/[0.05] rounded-2xl p-6 backdrop-blur-md">
+            <HeroSwitches activeSwitch={activeSwitch} />
+          </div>
 
-        {/* Title */}
-        <div
-          className={cn(
-            "text-center mb-14 transition-all duration-1000 delay-200",
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          )}
-        >
-          <div className="relative">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              <span className="relative inline-block">
-                <span className="absolute inset-0 text-gold blur-md opacity-40">
-                  SWITCH
-                </span>
-                <span className="relative text-gold drop-shadow-[0_0_25px_rgba(210,170,90,0.5)]">
-                  SWITCH
-                </span>
-              </span>
-              <span className="text-foreground/80 ml-3 font-light">SIM</span>
-            </h1>
-            <p className="mt-4 text-muted-foreground text-xs tracking-[0.35em] uppercase font-mono">
-              Algorithm Visualization System
-            </p>
+          {/* Mode Selection Section */}
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-1.5 h-3 bg-gold rounded-full" />
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em]">Operational Modes</span>
+            </div>
+            <div className="flex flex-col gap-3">
+              {modes.map((mode, index) => (
+                <ModeButton
+                  key={mode.id}
+                  mode={mode}
+                  index={index}
+                  isHovered={hoveredMode === mode.id}
+                  onHover={() => setHoveredMode(mode.id)}
+                  onLeave={() => setHoveredMode(null)}
+                  onClick={() => onSelectMode(mode.id)}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Mode selection - elegant buttons */}
-        <div
-          className={cn(
-            "flex items-center justify-center gap-4 md:gap-6 transition-all duration-1000 delay-500",
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          )}
-        >
-          {modes.map((mode, index) => (
-            <ModeButton
-              key={mode.id}
-              mode={mode}
-              index={index}
-              isHovered={hoveredMode === mode.id}
-              onHover={() => setHoveredMode(mode.id)}
-              onLeave={() => setHoveredMode(null)}
-              onClick={() => onSelectMode(mode.id)}
-            />
-          ))}
-        </div>
+        {/* RIGHT PANEL: Branding & Intelligence */}
+        <div className="flex-1 w-full flex flex-col gap-4">
+          {/* High-Contrast Branding Header */}
+          <div className="border-b border-white/[0.05] pb-10">
+            <h1 className="text-6xl md:text-7xl tracking-tighter leading-none group">
+              <span className="font-black text-white/10 uppercase italic group-hover:text-white/20 transition-all duration-700">Switch</span>
+              <span className="font-bold text-gold/30 ml-2 group-hover:text-gold transition-all duration-700">Sim</span>
+            </h1>
+          </div>
 
-        {/* Hover info display */}
-        <div className="h-10 mt-8 flex items-center justify-center">
-          {hoveredMode && (
-            <p className="text-amber/70 text-sm font-mono animate-in fade-in slide-in-from-bottom-2 duration-200">
-              {modes.find((m) => m.id === hoveredMode)?.description}
-            </p>
-          )}
+          {/* Intelligence Briefing Card */}
+          <GlassCard className="p-8 md:p-12 border-white/[0.05] bg-white/[0.02] shadow-2xl relative overflow-hidden" glowColor="gold">
+            <div className="absolute -top-20 -right-20 text-[180px] font-black text-white/[0.01] pointer-events-none select-none uppercase tracking-tighter italic">
+              Brief
+            </div>
+
+            <div className="relative z-10 space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-bold text-white/20 uppercase tracking-[0.3em]">Mission Goal</h3>
+                <p className="text-xs md:text-sm text-white/40 leading-relaxed font-mono tracking-tight max-w-2xl">
+                  Start with all switches <span className="text-neon-green/60 font-bold uppercase mx-1">ON (111...)</span> and 
+                  turn them all <span className="text-neon-red/60 font-bold uppercase mx-1">OFF (000...)</span> in the minimum number of moves.
+                </p>
+              </div>
+
+              <div className="pt-6 border-t border-white/[0.05] space-y-4">
+                <h3 className="text-[10px] font-bold text-neon-green/60 uppercase tracking-[0.3em]">Operational Rules</h3>
+                <ul className="space-y-3 max-w-2xl">
+                  <li className="flex gap-4 text-xs md:text-sm text-white/40 leading-relaxed font-mono">
+                    <span className="text-neon-green shrink-0">01.</span>
+                    <span>The <span className="text-white/60">RIGHTMOST</span> switch can be toggled ON or OFF at any time.</span>
+                  </li>
+                  <li className="flex gap-4 text-xs md:text-sm text-white/40 leading-relaxed font-mono">
+                    <span className="text-neon-green shrink-0">02.</span>
+                    <span>Any other switch can be toggled <span className="text-white/60 uppercase">ONLY</span> if its immediate right neighbor is ON and all switches further to the right are OFF.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-6 border-t border-white/[0.05] grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-gold/30 transition-colors duration-300">
+                  <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest block mb-2">Mathematical Model</span>
+                  <p className="text-sm text-white/80 font-mono font-bold tracking-tight">T(n) = T(n-1) + 2T(n-2) + 1</p>
+                </div>
+                <div className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-neon-green/30 transition-colors duration-300">
+                  <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest block mb-2">Complexity Target</span>
+                  <p className="text-sm text-white/80 font-mono font-bold tracking-tight">O(2^n) Recursive Depth</p>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
         </div>
       </div>
 
-      {/* Bottom decorative element */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4">
-        <div className="w-20 h-px bg-gradient-to-r from-transparent via-gold-dim/30 to-transparent" />
-        <div className="w-1.5 h-1.5 rounded-full bg-gold/40" />
-        <div className="w-20 h-px bg-gradient-to-r from-transparent via-gold-dim/30 to-transparent" />
+      {/* Subtle Bottom Accent */}
+      <div className="absolute bottom-8 w-full px-12 flex items-center justify-between opacity-20">
+        <span className="text-[8px] font-mono text-white/40 tracking-[0.5em] uppercase">Secure Connection Established</span>
+        <div className="flex gap-2">
+          <div className="w-1 h-1 rounded-full bg-white/40" />
+          <div className="w-1 h-1 rounded-full bg-white/40" />
+          <div className="w-1 h-1 rounded-full bg-white/40" />
+        </div>
       </div>
     </div>
   );
@@ -131,63 +154,44 @@ function HeroSwitches({ activeSwitch }: { activeSwitch: number }) {
   const switches = [true, true, true, true, true];
 
   return (
-    <div className="relative">
-      {/* Warm glow backdrop */}
-      <div className="absolute inset-0 blur-3xl opacity-20 bg-gold rounded-full scale-150" />
-
-      {/* Switch container */}
-      <div className="relative flex items-center gap-4 md:gap-5 p-8 md:p-10 rounded-2xl bg-card/40 backdrop-blur-xl border border-gold/10">
-        {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-5 h-5 border-l border-t border-gold/30 rounded-tl-xl" />
-        <div className="absolute top-0 right-0 w-5 h-5 border-r border-t border-gold/30 rounded-tr-xl" />
-        <div className="absolute bottom-0 left-0 w-5 h-5 border-l border-b border-gold/30 rounded-bl-xl" />
-        <div className="absolute bottom-0 right-0 w-5 h-5 border-r border-b border-gold/30 rounded-br-xl" />
-
+    <div className="relative py-2">
+      <div className="flex items-center justify-between gap-3 md:gap-4">
         {switches.map((isOn, i) => {
           const isActive = i === activeSwitch;
           const currentState = isActive ? !isOn : isOn;
-
+          
           return (
-            <div
-              key={i}
-              className={cn(
-                "relative w-11 h-11 md:w-14 md:h-14 rounded-full",
-                "flex items-center justify-center",
-                "transition-all duration-500 ease-out",
-                currentState
-                  ? "bg-gold/15 shadow-[0_0_25px_rgba(210,170,90,0.35)]"
-                  : "bg-gold-dim/5",
-                isActive && "scale-110"
-              )}
-            >
-              {/* Ring */}
+            <div key={i} className="flex flex-col items-center gap-3 group">
               <div
                 className={cn(
-                  "absolute inset-0 rounded-full border transition-all duration-500",
-                  currentState ? "border-gold/60" : "border-gold-dim/20"
+                  "relative w-10 h-10 md:w-12 md:h-12 rounded-xl transition-all duration-300 ease-out flex items-center justify-center",
+                  "border-[1.5px]",
+                  currentState 
+                    ? "bg-neon-green/10 border-neon-green/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]" 
+                    : "bg-neon-red/5 border-neon-red/20",
+                  isActive && "scale-110",
                 )}
-              />
-              {/* Inner dot */}
-              <div
-                className={cn(
-                  "w-5 h-5 md:w-6 md:h-6 rounded-full transition-all duration-500",
-                  currentState
-                    ? "bg-gold shadow-[0_0_15px_rgba(210,170,90,0.7)]"
-                    : "bg-gold-dim/30"
+              >
+                {/* Core Dot */}
+                <div className={cn(
+                  "w-3 h-3 md:w-4 md:h-4 rounded-full transition-all duration-300",
+                  currentState 
+                    ? "bg-neon-green shadow-[0_0_10px_rgba(34,197,94,0.6)]" 
+                    : "bg-white/10"
+                )} />
+                
+                {/* Active Indicator Ring */}
+                {isActive && (
+                  <div className={cn(
+                    "absolute -inset-1 rounded-2xl border transition-colors duration-300",
+                    currentState ? "border-neon-green/30 animate-pulse" : "border-neon-red/30"
+                  )} />
                 )}
-              />
-              {/* Pulse effect for active */}
-              {isActive && currentState && (
-                <div className="absolute inset-0 rounded-full border border-gold/50 animate-ping opacity-40" />
-              )}
+              </div>
+              <span className="text-[8px] font-mono text-white/20">S-0{i}</span>
             </div>
           );
         })}
-      </div>
-
-      {/* Label */}
-      <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-[9px] font-mono text-gold-dim/50 tracking-[0.3em]">
-        LIVE PREVIEW
       </div>
     </div>
   );
@@ -205,6 +209,7 @@ function ModeButton({
     id: string;
     label: string;
     sublabel: string;
+    description: string;
   };
   index: number;
   isHovered: boolean;
@@ -218,41 +223,47 @@ function ModeButton({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       className={cn(
-        "group relative flex flex-col items-center gap-2 px-6 py-5 md:px-8 md:py-6 rounded-xl",
-        "border border-gold/10 backdrop-blur-sm transition-all duration-400 ease-out",
-        "bg-card/30",
-        isHovered && "bg-gold/10 border-gold/30 shadow-[0_0_40px_rgba(210,170,90,0.2)]",
-        isHovered ? "scale-105 -translate-y-1" : "scale-100"
+        "group relative w-full p-4 rounded-xl text-left transition-all duration-300 ease-out",
+        "bg-white/[0.02] border border-white/[0.05] overflow-hidden",
+        isHovered && "bg-white/[0.05] border-gold/40 -translate-y-1 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
       )}
-      style={{
-        transitionDelay: `${index * 30}ms`,
-      }}
+      style={{ transitionDelay: `${index * 40}ms` }}
     >
-      {/* Main label */}
-      <span
-        className={cn(
-          "text-xl md:text-2xl font-semibold tracking-wide transition-all duration-300",
-          isHovered ? "text-gold drop-shadow-[0_0_12px_rgba(210,170,90,0.6)]" : "text-foreground/80"
-        )}
-      >
-        {mode.label}
-      </span>
-
-      {/* Sublabel */}
-      <span className={cn(
-        "text-[10px] md:text-xs font-mono tracking-wider uppercase transition-colors duration-300",
-        isHovered ? "text-amber/60" : "text-muted-foreground/50"
-      )}>
-        {mode.sublabel}
-      </span>
-
-      {/* Hover line indicator */}
-      <div
-        className={cn(
-          "absolute -bottom-px left-1/2 -translate-x-1/2 h-px rounded-full transition-all duration-400",
-          isHovered ? "w-12 bg-gold/60" : "w-0 bg-transparent"
-        )}
-      />
+      {/* Selection Glow Effect */}
+      <div className={cn(
+        "absolute inset-0 bg-gradient-to-r from-gold/10 via-transparent to-transparent opacity-0 transition-opacity duration-300",
+        isHovered && "opacity-100"
+      )} />
+      
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="space-y-1">
+          <h3 className={cn(
+            "text-sm md:text-base font-bold tracking-wider transition-colors duration-300",
+            isHovered ? "text-gold" : "text-white/60"
+          )}>
+            {mode.label}
+          </h3>
+          <p className="text-[10px] text-white/20 font-mono uppercase tracking-widest group-hover:text-white/40 transition-colors">
+            {mode.sublabel}
+          </p>
+        </div>
+        
+        <div className={cn(
+          "w-8 h-8 rounded-lg flex items-center justify-center border transition-all duration-300",
+          isHovered ? "bg-gold/20 border-gold/40" : "bg-white/5 border-white/10"
+        )}>
+          <div className={cn(
+            "w-1.5 h-1.5 rounded-full transition-all duration-300",
+            isHovered ? "bg-gold shadow-[0_0_8px_rgba(210,170,90,0.8)] scale-125" : "bg-white/20"
+          )} />
+        </div>
+      </div>
+      
+      {/* Bottom Indicator Line */}
+      <div className={cn(
+        "absolute bottom-0 left-0 h-0.5 bg-gold transition-all duration-500 ease-out",
+        isHovered ? "w-full opacity-60" : "w-0 opacity-0"
+      )} />
     </button>
   );
 }
@@ -260,29 +271,23 @@ function ModeButton({
 function FloatingParticles() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 15 }).map((_, i) => (
+      {Array.from({ length: 12 }).map((_, i) => (
         <div
           key={i}
-          className="absolute w-1 h-1 rounded-full bg-gold/20"
+          className="absolute w-1 h-1 rounded-full bg-gold/10"
           style={{
-            left: `${10 + Math.random() * 80}%`,
-            top: `${10 + Math.random() * 80}%`,
-            animation: `floatGold ${8 + Math.random() * 12}s ease-in-out infinite`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animation: `pulseFloat ${10 + Math.random() * 15}s linear infinite`,
             animationDelay: `${Math.random() * 5}s`,
           }}
         />
       ))}
       <style jsx>{`
-        @keyframes floatGold {
-          0%,
-          100% {
-            transform: translateY(0) translateX(0) scale(1);
-            opacity: 0.15;
-          }
-          50% {
-            transform: translateY(-15px) translateX(8px) scale(1.3);
-            opacity: 0.35;
-          }
+        @keyframes pulseFloat {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.1; }
+          33% { transform: translate(20px, -30px) scale(1.5); opacity: 0.2; }
+          66% { transform: translate(-20px, -15px) scale(1.2); opacity: 0.15; }
         }
       `}</style>
     </div>

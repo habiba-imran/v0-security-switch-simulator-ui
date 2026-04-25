@@ -25,9 +25,9 @@ const modeConfig = {
     glowColor: "green" as const,
   },
   bfs: {
-    title: "BFS Visualization",
+    title: "Brute Force Visualization",
     algorithmInfo:
-      "Breadth-First Search explores all states level by level, guaranteed to find the shortest solution.",
+      "Brute Force using BFS explores all states level by level, guaranteed to find the shortest solution.",
     glowColor: "blue" as const,
   },
   divide: {
@@ -39,24 +39,39 @@ const modeConfig = {
 };
 
 export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
-  const [switchCount, setSwitchCount] = useState(5);
+  const [switchCount, setSwitchCount] = useState(3);
   const [switches, setSwitches] = useState<boolean[]>(() =>
-    Array(5).fill(true)
+    Array(3).fill(true)
   );
   const [solutionPath, setSolutionPath] = useState<SwitchBit[][]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [step, setStep] = useState(0);
   const [totalSteps, setTotalSteps] = useState(0);
-  const [statusText, setStatusText] = useState("Ready to start");
+  const [statusText, setStatusText] = useState("Click INITIALIZE to begin. You can adjust the array size in the control panel.");
   const [divideRecurrenceLines, setDivideRecurrenceLines] = useState<string[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [moveDescriptions, setMoveDescriptions] = useState<string[]>([]);
   const moveListRef = useRef<HTMLDivElement>(null);
+  const [violationHistory, setViolationHistory] = useState<string[]>([]);
+  const [isWon, setIsWon] = useState(false);
+  const [hasShownEfficiencyWarning, setHasShownEfficiencyWarning] = useState(false);
+
+  // Auto-scroll logic for feeds
+  useEffect(() => {
+    if (moveListRef.current) {
+      moveListRef.current.scrollTo({
+        top: moveListRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [moveDescriptions, violationHistory]);
+
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
     visible: boolean;
+    duration?: number;
   }>({ message: "", type: "info", visible: false });
 
   const config = modeConfig[mode];
@@ -105,19 +120,19 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     if (toggledIndex >= 0) {
       const n = state.length;
       let reason = "";
-      
+
       // Calculate switch number from index (S1 is rightmost in our internal logic for D&C)
       // but in the UI we use 1-indexed from left. 
       // The rules are:
       // Rule 1: Rightmost (index n-1) can always toggle.
       // Rule 2: Switch i can toggle if i+1 is ON and i+2...n-1 are OFF.
-      
+
       if (toggledIndex === n - 1) {
         reason = "Rule 1: The rightmost switch is always accessible.";
       } else {
         const nextOn = previous[toggledIndex + 1] === 1;
         const othersOff = previous.slice(toggledIndex + 2).every(b => b === 0);
-        
+
         if (nextOn && othersOff) {
           reason = `Rule 2: S${toggledIndex + 2} is ON and all switches to its right are OFF.`;
         } else if (!nextOn) {
@@ -126,9 +141,9 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
           reason = `NOTE: All switches to the right of S${toggledIndex + 2} must be OFF.`;
         }
       }
-      
+
       const action = state[toggledIndex] === 1 ? "ON" : "OFF";
-      const algoPrefix = mode === "bfs" ? "[BFS Search]" : "[Recursive D&C]";
+      const algoPrefix = mode === "bfs" ? "[Brute Force Search]" : "[Recursive D&C]";
       setStatusText(`${algoPrefix} Move ${moveIndex}: Turned S${toggledIndex + 1} ${action}. ${reason}`);
     } else {
       setStatusText(`Move ${moveIndex}: state updated`);
@@ -141,7 +156,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setIsRunning(false);
     setStatusText("Shortest path complete");
     setToast({
-      message: "BFS completed with shortest path",
+      message: "Brute Force completed with shortest path",
       type: "success",
       visible: true,
     });
@@ -226,61 +241,101 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setIsPlaying(false);
     setStep(0);
     setTotalSteps(0);
-    setStatusText("Ready to start");
+    setIsWon(false);
+    setHasShownEfficiencyWarning(false);
+    setStatusText("Click INITIALIZE to begin. You can adjust the array size in the control panel.");
   }, [clearPlaybackTimer]);
 
   const handleToggle = useCallback(
     (index: number) => {
-      if (mode !== "play" || isRunning) return;
+      if (mode !== "play" || !isRunning || isWon) return;
 
-      let canToggle = false;
       const n = switches.length;
+      let canToggle = false;
+      let errorMsg = "";
 
       if (index === n - 1) {
-        canToggle = true;
-      } else if (switches[index + 1]) {
-        canToggle = true;
-        for (let j = index + 2; j < n; j++) {
-          if (switches[j]) {
-            canToggle = false;
-            break;
-          }
+        canToggle = true; // Rule 1
+      } else {
+        // Rule 2 Check
+        const nextOn = switches[index + 1];
+        const othersOff = switches.slice(index + 2).every(s => !s);
+
+        if (nextOn && othersOff) {
+          canToggle = true;
+        } else {
+          errorMsg = `Violation: S${index + 2} must be ON and all switches to its right must be OFF.`;
         }
       }
 
       if (!canToggle) {
-        setToast({
-          message: `Cannot toggle S${index + 1}. Switch S${index + 2} must be ON and all switches to its right must be OFF.`,
-          type: "error",
-          visible: true,
+        setViolationHistory((prev) => [...prev, errorMsg]);
+
+        setStep((prev) => {
+          const nextStep = prev + 1;
+          if (nextStep > totalSteps && totalSteps > 0 && !hasShownEfficiencyWarning) {
+            setHasShownEfficiencyWarning(true);
+            setToast({
+              message: "Efficiency Target Failed: You have exceeded the minimum moves required.",
+              type: "error",
+              visible: true,
+            });
+          }
+          return nextStep;
         });
+
         return;
       }
 
       setSwitches((prev) => {
         const newSwitches = [...prev];
         newSwitches[index] = !newSwitches[index];
+
+        if (newSwitches.every(s => !s)) {
+          const isEfficient = (step + 1) <= totalSteps;
+          setIsWon(true);
+          setIsRunning(false);
+
+          if (isEfficient) {
+            setStatusText("MISSION SUCCESS: Security Array Secured. Optimal deactivation achieved.");
+            setToast({
+              message: "Mission Complete: System Fully Deactivated. Perfect Efficiency.",
+              type: "success",
+              visible: true,
+              duration: 999999,
+            });
+          } else {
+            setStatusText("CONGRATULATIONS: Puzzle Solved. System could not be fully deactivated due to efficiency target failure.");
+            setToast({
+              message: "Puzzle Solved. Note: Full deactivation failed (exceeded minimum goal).",
+              type: "info",
+              visible: true,
+              duration: 999999,
+            });
+          }
+        }
+
         return newSwitches;
       });
 
-      setStep((prev) => prev + 1);
-      setStatusText(`Toggled switch S${index + 1}`);
+      setStep((prev) => {
+        const nextStep = prev + 1;
+        if (nextStep > totalSteps && totalSteps > 0 && !switches.every(s => !s) && !hasShownEfficiencyWarning) {
+          setHasShownEfficiencyWarning(true);
+          setToast({
+            message: "Efficiency Target Failed: You have exceeded the minimum moves required.",
+            type: "error",
+            visible: true,
+          });
+        }
+        return nextStep;
+      });
 
-      // Check win condition
-      setTimeout(() => {
-        setSwitches((current) => {
-          if (current.every((s) => !s)) {
-            setToast({
-              message: "Security breach successful! All switches are OFF!",
-              type: "success",
-              visible: true,
-            });
-          }
-          return current;
-        });
-      }, 100);
+      if (switches.some(s => s)) {
+        setStatusText(`Toggled switch S${index + 1}`);
+      }
     },
-    [mode, isRunning, switches]
+    [mode, isRunning, switches, totalSteps, isWon, hasShownEfficiencyWarning]
   );
 
   const handleStart = useCallback(() => {
@@ -291,7 +346,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       setSolutionPath(result.path);
       setStep(0);
       setTotalSteps(result.minMoves);
-      
+
       // Derive move descriptions
       const descriptions = result.path.slice(1).map((state, i) => {
         const prev = result.path[i];
@@ -306,7 +361,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       updateStateFromPath(0, result.path);
       setStatusText(`Shortest path found: ${result.minMoves} moves. Click 'Play' for auto or 'Next' to step.`);
       setToast({
-        message: `BFS solution found in ${result.minMoves} moves`,
+        message: `Brute Force solution found in ${result.minMoves} moves`,
         type: "info",
         visible: true,
       });
@@ -321,12 +376,12 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     if (mode === "divide") {
       const result = solveDivideConquer(switchCount);
       const recurrence = recurrenceSteps(switchCount);
-      
+
       setSolutionPath(result.path as SwitchBit[][]);
       setDivideRecurrenceLines(recurrence);
       setStep(0);
       setTotalSteps(result.moves);
-      
+
       setMoveDescriptions(result.descriptions);
 
       setIsRunning(true);
@@ -352,12 +407,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setSolutionPath([]);
     const minMoves = Math.floor(Math.pow(2, switchCount + 1) / 3);
     setTotalSteps(minMoves);
-    setStatusText(`Manual mode initialized. Target: ${minMoves} moves. Use 'Next' to proceed.`);
-    setToast({
-      message: `${config.title} initialized`,
-      type: "info",
-      visible: true,
-    });
+    setStatusText(`Manual mode initialized. Target: ${minMoves} moves.`);
   }, [
     advanceBfsStep,
     clearPlaybackTimer,
@@ -374,12 +424,15 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setSolutionPath([]);
     setMoveDescriptions([]);
     setDivideRecurrenceLines([]);
+    setViolationHistory([]);
     setIsRunning(false);
     setIsPlaying(false);
+    setIsWon(false);
+    setHasShownEfficiencyWarning(false);
     setStep(0);
     setTotalSteps(0);
-    setStatusText("Ready to start");
-    setToast({ message: "Reset complete", type: "info", visible: true });
+    setStatusText("Click INITIALIZE to begin. You can adjust the array size in the control panel.");
+    setToast({ message: "Reset complete", type: "info", visible: true, duration: 800 });
   }, [clearPlaybackTimer, switchCount]);
 
   const handlePlay = useCallback(() => {
@@ -450,116 +503,168 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     <div className="relative z-10 min-h-screen p-4 md:p-8 flex flex-col gap-6 bg-background/50 overflow-y-auto">
       <TopBar
         title={config.title}
-        info={config.algorithmInfo}
         onBack={onBack}
-        switchCount={switchCount}
-        onSwitchCountChange={handleSwitchCountChange}
-        onStart={handleStart}
-        onReset={handleReset}
-        isRunning={isRunning}
+        step={step}
+        totalSteps={totalSteps}
+        progress={progress}
+        statusText={statusText}
       />
 
       {/* Dashboard Top Intelligence Section */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 shrink-0">
-        {/* Column 1: Mission Stats */}
-        <GlassCard className="p-6 border-white/5 bg-white/[0.02]" glowColor={config.glowColor}>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Mission Progress</span>
-              <span className="text-xl font-mono font-bold text-neon-blue">{step} <span className="text-white/20">/</span> {totalSteps}</span>
-            </div>
-            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden p-[1px]">
-              <div
-                className="h-full bg-gradient-to-r from-neon-blue to-neon-green transition-all duration-500 rounded-full"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="flex flex-col mt-2">
-              <span className="text-[11px] font-bold text-white/40 uppercase tracking-[0.2em]">System Status</span>
-              <p className="mt-1.5 text-sm font-medium text-neon-green line-clamp-2 min-h-[40px] leading-relaxed">
-                {statusText}
-              </p>
-            </div>
+        {/* Column 1: Rules & Protocol (Relocated) */}
+        <GlassCard className="p-6 border-white/5 bg-white/[0.02]" glowColor="gold">
+          <div className="flex flex-col gap-4 h-full">
+            <span className="text-[10px] font-black text-neon-green/80 uppercase tracking-[0.2em] border-b border-white/5 pb-2 font-sans">Operational Protocol</span>
+
+            <ul className="space-y-4 flex-1 mt-2">
+              <li className="flex gap-3 text-[11px] text-white/50 leading-relaxed font-mono">
+                <span className="text-neon-green font-bold">01.</span>
+                <span>Rightmost switch toggles <span className="text-white/80 font-bold uppercase tracking-tighter">any time</span>.</span>
+              </li>
+              <li className="flex gap-3 text-[11px] text-white/50 leading-relaxed font-mono">
+                <span className="text-neon-green font-bold">02.</span>
+                <span>Toggle others <span className="text-white/80 font-bold uppercase tracking-tighter">ONLY</span> if right neighbor is ON and others to the right are OFF.</span>
+              </li>
+              <li className="flex gap-3 text-[11px] text-white/50 leading-relaxed font-mono">
+                <span className="text-neon-green/60 font-bold uppercase tracking-widest">Goal.</span>
+                <span>Transition from <span className="text-white/80 font-bold">111...</span> to <span className="text-white/80 font-bold">000...</span></span>
+              </li>
+            </ul>
           </div>
         </GlassCard>
 
-        {/* Column 2: Execution Log - Relocated for better visibility */}
-        <GlassCard className="p-6 border-white/5 bg-white/[0.02] overflow-hidden flex flex-col h-[200px]" glowColor={config.glowColor}>
-          <div className="flex items-center justify-between mb-3 shrink-0">
-            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Execution Log</span>
-            <span className="text-[9px] font-mono text-neon-blue bg-neon-blue/5 px-2 py-0.5 rounded border border-neon-blue/20">
-              {moveDescriptions.length} OPS
+        {/* Column 2: Execution Log / Violation Feed */}
+        <GlassCard className="p-6 border-white/5 bg-white/[0.02] overflow-hidden flex flex-col h-[200px]" glowColor={mode === "play" ? "red" : config.glowColor}>
+          <div className="flex items-center justify-between mb-4 shrink-0">
+            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-sans">
+              {mode === "play" ? "Violation Feed" : "Execution Log"}
+            </span>
+            <span className={cn(
+              "text-[9px] font-mono font-bold px-2 py-0.5 rounded border tracking-tight",
+              mode === "play"
+                ? "text-neon-red bg-neon-red/5 border-neon-red/20 shadow-[0_0_8px_rgba(255,88,88,0.1)]"
+                : "text-neon-blue bg-neon-blue/5 border-neon-blue/20 shadow-[0_0_8px_rgba(88,166,255,0.1)]"
+            )}>
+              {mode === "play" ? violationHistory.length : moveDescriptions.length} OPS
             </span>
           </div>
-          <div 
+          <div
             ref={moveListRef}
             className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2"
           >
-            {moveDescriptions.length > 0 ? (
-              moveDescriptions.map((desc, i) => {
-                const isCurrent = i === step - 1;
-                const isPast = i < step - 1;
-                return (
-                  <div key={i} className={cn(
-                    "flex items-center gap-3 p-2 rounded-lg border transition-all duration-300",
-                    isCurrent ? "bg-neon-blue/10 border-neon-blue/40" : "bg-white/[0.01] border-white/5",
-                    isPast && "opacity-20"
-                  )}>
-                    <span className={cn("text-[9px] font-mono font-bold shrink-0 w-4", isCurrent ? "text-neon-blue" : "text-white/20")}>
-                      {i + 1}
-                    </span>
-                    <span className={cn("text-[10px] font-bold truncate", isCurrent ? "text-neon-blue" : "text-white/40")}>
-                      {desc}
+            {mode === "play" ? (
+              violationHistory.length > 0 ? (
+                violationHistory.map((error, i) => (
+                  <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl border border-neon-red/20 bg-neon-red/5">
+                    <span className="text-[10px] font-mono font-bold text-neon-red shrink-0 mt-0.5">!</span>
+                    <span className="text-[11px] font-bold text-neon-red/80 leading-tight font-mono tracking-tight">
+                      {error}
                     </span>
                   </div>
-                );
-              })
+                ))
+              ) : (
+                <p className="text-[10px] font-bold text-white/10 italic text-center mt-6 tracking-widest uppercase font-sans">Protocol Sync: Nominal</p>
+              )
             ) : (
-              <p className="text-[10px] text-white/20 italic text-center mt-4">System Idle: Awaiting Mission Initialization</p>
+              moveDescriptions.length > 0 ? (
+                moveDescriptions.map((desc, i) => {
+                  const isCurrent = i === step - 1;
+                  const isPast = i < step - 1;
+                  return (
+                    <div key={i} className={cn(
+                      "flex items-center gap-3 p-2 rounded-lg border transition-all duration-300",
+                      isCurrent ? "bg-neon-blue/10 border-neon-blue/40" : "bg-white/[0.01] border-white/5",
+                      isPast && "opacity-20"
+                    )}>
+                      <span className={cn("text-[9px] font-mono font-bold shrink-0 w-4", isCurrent ? "text-neon-blue" : "text-white/20")}>
+                        {(i + 1).toString().padStart(2, '0')}
+                      </span>
+                      <span className={cn("text-[11px] font-bold truncate font-mono", isCurrent ? "text-neon-blue" : "text-white/40")}>
+                        {desc}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-[10px] font-bold text-white/10 italic text-center mt-6 tracking-widest uppercase font-sans">System Idle</p>
+              )
             )}
           </div>
         </GlassCard>
 
-        {/* Column 3: System Controls */}
+        {/* Column 3: Array Control */}
         <GlassCard className="p-6 border-white/5 bg-white/[0.02]" glowColor={config.glowColor}>
-          <div className="flex flex-col gap-4 items-center justify-center h-full">
-            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Operation Control</span>
-            <div className="flex items-center gap-4 bg-black/40 p-2 rounded-2xl border border-white/10 shadow-inner">
-              <button 
-                onClick={isPlaying ? handlePause : handlePlay}
-                className={cn(
-                  "p-3 rounded-xl transition-all duration-300 group relative",
-                  isPlaying ? "bg-neon-red/10 text-neon-red hover:bg-neon-red/20" : "bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20",
-                )}
-              >
-                {isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
-                <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  {isPlaying ? "Pause" : "Auto Play"}
-                </span>
-              </button>
-              
-              <div className="w-px h-8 bg-white/5 mx-1" />
-              
-              <button 
-                onClick={handleStep}
-                disabled={isPlaying}
-                className="p-3 rounded-xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-10 transition-all duration-300 group relative"
-              >
-                <StepIcon className="w-6 h-6" />
-                <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Next Step
-                </span>
-              </button>
+          <div className="flex flex-col gap-5">
+            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-sans">Hardware Config</span>
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-4">
+                <div className="flex-1 bg-black/40 rounded-xl border border-white/10 p-2.5 flex flex-col items-center justify-center">
+                  <label className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-1 font-sans">Array Size</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={switchCount}
+                    onChange={(e) => handleSwitchCountChange(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+                    disabled={isRunning || isWon}
+                    className="bg-transparent text-[14px] font-mono font-bold text-gold/80 focus:outline-none w-full text-center"
+                  />
+                </div>
+                <button
+                  onClick={handleStart}
+                  disabled={isRunning || isWon}
+                  className={cn(
+                    "flex-[2] py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.3em] transition-all duration-300 font-sans",
+                    (!isRunning && !isWon)
+                      ? "bg-neon-green text-background shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:scale-[1.02] active:scale-95"
+                      : "bg-white/5 text-white/10 grayscale cursor-not-allowed border border-white/5"
+                  )}
+                >
+                  Initialize
+                </button>
+              </div>
 
-              <button 
-                onClick={handleReset}
-                className="p-3 rounded-xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all duration-300 group relative"
-              >
-                <ResetIcon className="w-6 h-6" />
-                <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              {/* Playback Controls - Hidden in Manual Mode */}
+              {mode !== "play" && (
+                <div className="flex items-center justify-between gap-3 bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner">
+                  <button
+                    onClick={isPlaying ? handlePause : handlePlay}
+                    className={cn(
+                      "flex-1 p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center",
+                      isPlaying ? "bg-neon-red/10 text-neon-red hover:bg-neon-red/20 shadow-[0_0_15px_rgba(255,88,88,0.1)]" : "bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 shadow-[0_0_15px_rgba(88,166,255,0.1)]",
+                    )}
+                  >
+                    {isPlaying ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
+                  </button>
+
+                  <button
+                    onClick={handleStep}
+                    disabled={isPlaying}
+                    className="flex-1 p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-10 transition-all duration-300 flex items-center justify-center border border-white/5"
+                  >
+                    <StepIcon className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    onClick={handleReset}
+                    className="flex-1 p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all duration-300 flex items-center justify-center border border-white/5"
+                  >
+                    <ResetIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Manual Mode Reset Only */}
+              {mode === "play" && (
+                <button
+                  onClick={handleReset}
+                  className="w-full py-4 rounded-xl bg-white/5 text-white/30 border border-white/10 hover:bg-white/10 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-[0.3em] font-sans"
+                >
+                  <ResetIcon className="w-4 h-4" />
                   Reset System
-                </span>
-              </button>
+                </button>
+              )}
             </div>
           </div>
         </GlassCard>
@@ -568,7 +673,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       {/* Compact Full Width Main Console */}
       <div className="flex flex-col gap-8 w-full">
         <GlassCard
-          className="p-6 flex flex-col items-center justify-start border-white/5 shadow-2xl relative overflow-hidden h-fit py-12"
+          className="p-4 flex flex-col items-center justify-start border-white/5 shadow-2xl relative overflow-hidden h-fit py-8"
           glowColor={config.glowColor}
         >
           <div className="absolute top-4 left-6 flex items-center gap-2">
@@ -576,14 +681,14 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
             <span className="text-[9px] font-bold text-white/10 uppercase tracking-[0.4em]">Array Active</span>
           </div>
 
-          <div className="flex flex-wrap justify-center items-center gap-6 w-full mt-6">
+          <div className="flex flex-wrap justify-center items-center gap-6 w-full mt-4">
             {switches.map((isOn, index) => (
               <SecuritySwitch
                 key={index}
                 id={index + 1}
                 isOn={isOn}
                 onToggle={() => handleToggle(index)}
-                disabled={mode !== "play" || isRunning}
+                disabled={mode !== "play" || !isRunning}
                 size={switchCount > 8 ? "sm" : switchCount > 5 ? "md" : "lg"}
               />
             ))}
@@ -622,6 +727,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
         message={toast.message}
         type={toast.type}
         isVisible={toast.visible}
+        duration={toast.duration}
         onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
       />
     </div>

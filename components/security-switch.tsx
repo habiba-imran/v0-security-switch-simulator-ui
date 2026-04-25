@@ -18,9 +18,9 @@ export function SecuritySwitch({
   size = "md",
 }: SecuritySwitchProps) {
   const sizeStyles = {
-    sm: "w-12 h-12",
-    md: "w-16 h-16",
-    lg: "w-22 h-22",
+    sm: "w-10 h-10",
+    md: "w-14 h-14",
+    lg: "w-18 h-18",
   };
 
   return (
