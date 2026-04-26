@@ -42,6 +42,8 @@
   --sidebar-accent-foreground: oklch(0.9 0 0);
   --sidebar-border: oklch(0.25 0.02 260);
   --sidebar-ring: oklch(0.75 0.2 145);
+  --gold: #d4af37;
+  --gold-dim: rgba(212, 175, 55, 0.1);
 }
 
 @theme inline {

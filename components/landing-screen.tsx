@@ -108,19 +108,7 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
                 </p>
               </div>
 
-              <div className="pt-6 border-t border-white/[0.05] space-y-4">
-                <h3 className="text-[10px] font-bold text-neon-green/60 uppercase tracking-[0.3em]">Operational Rules</h3>
-                <ul className="space-y-3 max-w-2xl">
-                  <li className="flex gap-4 text-xs md:text-sm text-white/40 leading-relaxed font-mono">
-                    <span className="text-neon-green shrink-0">01.</span>
-                    <span>The <span className="text-white/60">RIGHTMOST</span> switch can be toggled ON or OFF at any time.</span>
-                  </li>
-                  <li className="flex gap-4 text-xs md:text-sm text-white/40 leading-relaxed font-mono">
-                    <span className="text-neon-green shrink-0">02.</span>
-                    <span>Any other switch can be toggled <span className="text-white/60 uppercase">ONLY</span> if its immediate right neighbor is ON and all switches further to the right are OFF.</span>
-                  </li>
-                </ul>
-              </div>
+
 
               <div className="pt-6 border-t border-white/[0.05] grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-gold/30 transition-colors duration-300">

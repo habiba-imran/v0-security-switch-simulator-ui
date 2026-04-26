@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 interface GlassCardProps {
   children: ReactNode;
   className?: string;
-  glowColor?: "green" | "blue" | "red";
+  glowColor?: "green" | "blue" | "red" | "gold";
   onClick?: () => void;
   interactive?: boolean;
 }
@@ -22,12 +22,14 @@ export function GlassCard({
     green: "hover:shadow-[0_0_30px_rgba(0,255,136,0.3)] hover:border-neon-green/50",
     blue: "hover:shadow-[0_0_30px_rgba(88,166,255,0.3)] hover:border-neon-blue/50",
     red: "hover:shadow-[0_0_30px_rgba(255,88,88,0.3)] hover:border-neon-red/50",
+    gold: "hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] hover:border-gold/50",
   };
 
   const activeGlow = {
     green: "shadow-[0_0_20px_rgba(0,255,136,0.2)]",
     blue: "shadow-[0_0_20px_rgba(88,166,255,0.2)]",
     red: "shadow-[0_0_20px_rgba(255,88,88,0.2)]",
+    gold: "shadow-[0_0_20px_rgba(255,215,0,0.2)]",
   };
 
   return (
