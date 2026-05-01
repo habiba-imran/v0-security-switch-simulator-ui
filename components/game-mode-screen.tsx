@@ -7,6 +7,7 @@ import { SecuritySwitch } from "./security-switch";
 import { ToastNotification } from "./toast-notification";
 import { GlassCard } from "./glass-card";
 import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronUp, Activity, Network } from "lucide-react";
 import { solveSwitchesBruteforce, type SwitchBit, type BruteForceResult, type SearchNode } from "@/lib/bruteforce-bfs";
 import { solveDivideConquer, divideConquerSwitches, recurrenceSteps, type DivideConquerResult } from "@/lib/divide-conquer";
 import { TheoryPanel } from "./theory-panel";
@@ -66,6 +67,10 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
   const [dcStepIndices, setDcStepIndices] = useState<number[]>([]);
   const [searchTree, setSearchTree] = useState<SearchNode[]>([]);
   const [efficiencySummary, setEfficiencySummary] = useState("");
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [logFilter, setLogFilter] = useState("all");
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const [isTreeOpen, setIsTreeOpen] = useState(false);
 
   // Auto-scroll logic for feeds
   useEffect(() => {
@@ -99,13 +104,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     };
   }, [clearPlaybackTimer]);
 
-  // Auto-initialize on mount for non-play modes
-  useEffect(() => {
-    if (mode !== "play") {
-      handleStart();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  // Auto-initialize on mount removed per user request for manual control
 
   useEffect(() => {
     if (moveListRef.current && step > 0) {
@@ -138,12 +137,6 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     if (toggledIndex >= 0) {
       const n = state.length;
       let reason = "";
-
-      // Calculate switch number from index (S1 is rightmost in our internal logic for D&C)
-      // but in the UI we use 1-indexed from left. 
-      // The rules are:
-      // Rule 1: Rightmost (index n-1) can always toggle.
-      // Rule 2: Switch i can toggle if i+1 is ON and i+2...n-1 are OFF.
 
       if (toggledIndex === n - 1) {
         reason = "Rule 1: The rightmost switch is always accessible.";
@@ -190,12 +183,11 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       const nextStep = prev + 1;
       updateStateFromPath(nextStep, solutionPath);
       
-      // Update pseudocode line
       if (nextStep === totalSteps) {
-        setCurrentLine(6); // return
+        setCurrentLine(6);
       } else {
-        setCurrentLine(2); // Dequeue
-        setTimeout(() => setCurrentLine(5), 300); // Toggle
+        setCurrentLine(2);
+        setTimeout(() => setCurrentLine(5), 300);
       }
 
       if (nextStep >= totalSteps) {
@@ -228,7 +220,6 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       const nextStep = prev + 1;
       updateStateFromPath(nextStep, solutionPath);
 
-      // Update pseudocode line from mapped indices
       if (dcStepIndices[nextStep - 1] !== undefined) {
         setCurrentLine(dcStepIndices[nextStep - 1]);
       }
@@ -268,14 +259,29 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setSolutionPath([]);
     setMoveDescriptions([]);
     setDivideRecurrenceLines([]);
+    
+    if (mode === "bfs") {
+      const result = solveSwitchesBruteforce(count);
+      setSearchTree(result.searchTree);
+    } else {
+      setSearchTree([]);
+    }
+
     setIsRunning(false);
     setIsPlaying(false);
     setStep(0);
     setTotalSteps(0);
     setIsWon(false);
     setHasShownEfficiencyWarning(false);
-    setStatusText("Click INITIALIZE to begin. You can adjust the array size in the control panel.");
-  }, [clearPlaybackTimer]);
+    setStatusText("");
+  }, [clearPlaybackTimer, mode]);
+
+  useEffect(() => {
+    if (mode === "bfs" && searchTree.length === 0) {
+      const result = solveSwitchesBruteforce(switchCount);
+      setSearchTree(result.searchTree);
+    }
+  }, [mode, switchCount, searchTree.length]);
 
   const handleToggle = useCallback(
     (index: number) => {
@@ -286,9 +292,8 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       let errorMsg = "";
 
       if (index === n - 1) {
-        canToggle = true; // Rule 1
+        canToggle = true;
       } else {
-        // Rule 2 Check
         const nextOn = switches[index + 1];
         const othersOff = switches.slice(index + 2).every(s => !s);
 
@@ -372,7 +377,6 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
   const handleStart = useCallback(() => {
     clearPlaybackTimer();
 
-    // MANDATORY CONSISTENCY CHECK (PART 5) - Run for all modes
     const bfsTest = solveSwitchesBruteforce(switchCount);
     const dcTest = solveDivideConquer(switchCount);
     const cfTest = Math.floor((Math.pow(2, switchCount + 1) - (1 + Math.pow(-1, switchCount))) / 3);
@@ -392,6 +396,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setIsWon(false);
     setHasShownEfficiencyWarning(false);
     setViolationHistory([]);
+    setHasInitialized(true);
 
     if (mode === "bfs") {
       const result = solveSwitchesBruteforce(switchCount) as BruteForceResult;
@@ -410,7 +415,6 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
 
       setEfficiencySummary(`BFS explores the state-space of 2ⁿ (${Math.pow(2, switchCount)}) configurations. For each configuration, it validates moves in O(n²) time. This results in a total time complexity of Θ(n²·2ⁿ). It guarantees the optimal path by exploring level-by-level.`);
 
-      // Derive move descriptions
       const descriptions = result.path.slice(1).map((state, i) => {
         const prev = result.path[i];
         const toggledIdx = state.findIndex((bit, j) => bit !== prev[j]);
@@ -494,6 +498,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
 
   const handleReset = useCallback(() => {
     clearPlaybackTimer();
+    setHasInitialized(false);
     setSwitches(Array(switchCount).fill(true));
     setSolutionPath([]);
     setSearchTree([]);
@@ -507,7 +512,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setHasShownEfficiencyWarning(false);
     setStep(0);
     setTotalSteps(0);
-    setStatusText("Click INITIALIZE to begin. You can adjust the array size in the control panel.");
+    setStatusText("");
     setToast({ message: "Reset complete", type: "info", visible: true, duration: 800 });
   }, [clearPlaybackTimer, switchCount]);
 
@@ -548,6 +553,17 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setStatusText("Paused");
   }, [clearPlaybackTimer, mode]);
 
+  const handleJumpToStep = useCallback((targetStep: number) => {
+    if (solutionPath.length === 0) return;
+    clearPlaybackTimer();
+    setIsPlaying(false);
+    setIsRunning(true);
+    const safeStep = Math.min(targetStep, totalSteps);
+    setStep(safeStep);
+    updateStateFromPath(safeStep, solutionPath);
+    setStatusText(`Jumped to Step ${safeStep}`);
+  }, [clearPlaybackTimer, solutionPath, totalSteps, updateStateFromPath]);
+
   const handleStep = useCallback(() => {
     if ((mode === "bfs" || mode === "divide") && solutionPath.length > 0 && step < totalSteps) {
       clearPlaybackTimer();
@@ -586,187 +602,220 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
         statusText={statusText}
       />
 
-      {/* Dashboard Top Intelligence Section */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 shrink-0">
-        {/* Column 1: Rules & Protocol (Relocated) */}
-        <GlassCard className="p-6 border-white/5 bg-white/[0.02]" glowColor="gold">
-          <div className="flex flex-col gap-4 h-full">
-            <span className="text-[10px] font-black text-neon-green/80 uppercase tracking-[0.2em] border-b border-white/5 pb-2 font-sans">Operational Protocol</span>
-
-            <ul className="space-y-4 flex-1 mt-2">
-              <li className="flex gap-3 text-[11px] text-white/50 leading-relaxed font-mono">
-                <span className="text-neon-green font-bold">01.</span>
-                <span>Rightmost switch toggles <span className="text-white/80 font-bold uppercase tracking-tighter">any time</span>.</span>
-              </li>
-              <li className="flex gap-3 text-[11px] text-white/50 leading-relaxed font-mono">
-                <span className="text-neon-green font-bold">02.</span>
-                <span>Toggle others <span className="text-white/80 font-bold uppercase tracking-tighter">ONLY</span> if right neighbor is ON and others to the right are OFF.</span>
-              </li>
-              <li className="flex gap-3 text-[11px] text-white/50 leading-relaxed font-mono">
-                <span className="text-neon-green/60 font-bold uppercase tracking-widest">Goal.</span>
-                <span>Transition from <span className="text-white/80 font-bold">111...</span> to <span className="text-white/80 font-bold">000...</span></span>
-              </li>
-            </ul>
-          </div>
-        </GlassCard>
-
-        {/* Column 2: Execution Log / Violation Feed */}
-        <GlassCard className="p-6 border-white/5 bg-white/[0.02] overflow-hidden flex flex-col h-[200px]" glowColor={mode === "play" ? "red" : config.glowColor}>
-          <div className="flex items-center justify-between mb-4 shrink-0">
-            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-sans">
-              {mode === "play" ? "Violation Feed" : "Execution Log"}
-            </span>
-            <span className={cn(
-              "text-[9px] font-mono font-bold px-2 py-0.5 rounded border tracking-tight",
-              mode === "play"
-                ? "text-neon-red bg-neon-red/5 border-neon-red/20 shadow-[0_0_8px_rgba(255,88,88,0.1)]"
-                : "text-neon-blue bg-neon-blue/5 border-neon-blue/20 shadow-[0_0_8px_rgba(88,166,255,0.1)]"
-            )}>
-              {mode === "play" ? violationHistory.length : moveDescriptions.length} OPS
-            </span>
-          </div>
-          <div
-            ref={moveListRef}
-            className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2"
-          >
-            {mode === "play" ? (
-              violationHistory.length > 0 ? (
-                violationHistory.map((error, i) => (
-                  <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl border border-neon-red/20 bg-neon-red/5">
-                    <span className="text-[10px] font-mono font-bold text-neon-red shrink-0 mt-0.5">!</span>
-                    <span className="text-[11px] font-bold text-neon-red/80 leading-tight font-mono tracking-tight">
-                      {error}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-[10px] font-bold text-white/10 italic text-center mt-6 tracking-widest uppercase font-sans">Protocol Sync: Nominal</p>
-              )
-            ) : (
-              moveDescriptions.length > 0 ? (
-                moveDescriptions.map((desc, i) => {
-                  const isCurrent = i === step - 1;
-                  const isPast = i < step - 1;
-                  return (
-                    <div key={i} className={cn(
-                      "flex items-center gap-3 p-2 rounded-lg border transition-all duration-300",
-                      isCurrent ? "bg-neon-blue/10 border-neon-blue/40" : "bg-white/[0.01] border-white/5",
-                      isPast && "opacity-20"
-                    )}>
-                      <span className={cn("text-[9px] font-mono font-bold shrink-0 w-4", isCurrent ? "text-neon-blue" : "text-white/20")}>
-                        {(i + 1).toString().padStart(2, '0')}
-                      </span>
-                      <span className={cn("text-[11px] font-bold truncate font-mono", isCurrent ? "text-neon-blue" : "text-white/40")}>
-                        {desc}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-[10px] font-bold text-white/10 italic text-center mt-6 tracking-widest uppercase font-sans">System Idle</p>
-              )
-            )}
-          </div>
-        </GlassCard>
-
-        {/* Column 3: Array Control */}
-        <GlassCard className="p-6 border-white/5 bg-white/[0.02]" glowColor={config.glowColor}>
+        <GlassCard className="p-6 border-white/5 bg-white/[0.02] h-[250px]" glowColor={config.glowColor}>
           <div className="flex flex-col gap-5">
-            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-sans">Hardware Config</span>
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-4">
-                <div className="flex-1 bg-black/40 rounded-xl border border-white/10 p-2.5 flex flex-col items-center justify-center">
-                  <label className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-1 font-sans">Array Size</label>
+            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] border-b border-white/5 pb-2 font-sans">Hardware Config</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="flex-1 bg-black/40 rounded-xl border border-white/10 p-2 flex flex-col items-center justify-center">
+                  <label className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-0.5 font-sans">Array Size</label>
                   <input
                     type="number"
                     min={1}
-                    max={10}
+                    max={5}
                     value={switchCount}
-                    onChange={(e) => handleSwitchCountChange(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => handleSwitchCountChange(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
                     disabled={isRunning || isWon}
-                    className="bg-transparent text-[14px] font-mono font-bold text-gold/80 focus:outline-none w-full text-center"
+                    className="bg-transparent text-[13px] font-mono font-bold text-gold/80 focus:outline-none w-full text-center"
                   />
                 </div>
                 <button
                   onClick={handleStart}
                   disabled={isRunning || isWon}
                   className={cn(
-                    "flex-[2] py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.3em] transition-all duration-300 font-sans",
+                    "flex-1 py-2 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 font-sans border",
                     (!isRunning && !isWon)
-                      ? "bg-neon-green text-background shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:scale-[1.02] active:scale-95"
-                      : "bg-white/5 text-white/10 grayscale cursor-not-allowed border border-white/5"
+                      ? "border-neon-green/30 bg-neon-green/5 text-neon-green shadow-[0_0_15px_rgba(0,255,136,0.1)] hover:bg-neon-green/10 hover:border-neon-green/50 hover:scale-[1.02] active:scale-95"
+                      : "border-white/5 bg-white/5 text-white/10 cursor-not-allowed"
                   )}
                 >
                   Initialize
                 </button>
               </div>
 
-              {/* Playback Controls - Step only */}
-              {mode !== "play" && (
-                <div className="flex items-center justify-between gap-3 bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner">
-                  <button
-                    onClick={handleStep}
-                    disabled={!isRunning || isWon}
-                    className="flex-[3] p-2.5 rounded-xl bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 shadow-[0_0_15px_rgba(88,166,255,0.1)] flex items-center justify-center gap-2 border border-neon-blue/20 transition-all duration-300 group"
-                  >
-                    <StepIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Next Step</span>
-                  </button>
+               {mode !== "play" && (
+                 <div className="flex items-center justify-between gap-2 bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner">
+                   <button
+                     onClick={handleStep}
+                     disabled={!hasInitialized || isWon}
+                     className="flex-[3] py-3 rounded-xl bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 shadow-[0_0_15px_rgba(88,166,255,0.1)] flex items-center justify-center gap-2 border border-neon-blue/20 transition-all duration-300 group disabled:opacity-20"
+                   >
+                     <span className="text-[9px] font-black uppercase tracking-widest">Next Step</span>
+                   </button>
 
-                  <button
-                    onClick={handleReset}
-                    className="flex-1 p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all duration-300 flex items-center justify-center border border-white/5"
-                  >
-                    <ResetIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
+                   <button
+                     onClick={handleReset}
+                     className="flex-1 py-3 rounded-xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all duration-300 flex items-center justify-center border border-white/5"
+                   >
+                   </button>
+                 </div>
+               )}
 
-              {/* Manual Mode Reset Only */}
               {mode === "play" && (
                 <button
                   onClick={handleReset}
-                  className="w-full py-4 rounded-xl bg-white/5 text-white/30 border border-white/10 hover:bg-white/10 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-[0.3em] font-sans"
+                  className="w-full py-3 rounded-xl bg-white/5 text-white/30 border border-white/10 hover:bg-white/10 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-[0.2em] font-sans"
                 >
-                  <ResetIcon className="w-4 h-4" />
                   Reset System
                 </button>
               )}
             </div>
           </div>
         </GlassCard>
+
+        {mode === "play" ? (
+          <GlassCard className="p-6 border-white/5 bg-white/[0.02] h-[250px]" glowColor="gold">
+            <div className="flex flex-col gap-4 h-full">
+              <span className="text-[10px] font-black text-neon-green/80 uppercase tracking-[0.2em] border-b border-white/5 pb-2 font-sans">Operational Protocol</span>
+              <ul className="space-y-3 flex-1 mt-2">
+                <li className="flex gap-3 text-[10px] text-white/50 leading-relaxed font-mono">
+                  <span className="text-gold font-bold">01.</span>
+                  <span>Rightmost switch toggles <span className="text-white/80 font-bold uppercase tracking-tighter">any time</span>.</span>
+                </li>
+                <li className="flex gap-3 text-[10px] text-white/50 leading-relaxed font-mono">
+                  <span className="text-gold font-bold">02.</span>
+                  <span>Toggle others <span className="text-white/80 font-bold uppercase tracking-tighter">ONLY</span> if right neighbor is ON and others to the right are OFF.</span>
+                </li>
+                <li className="flex gap-3 text-[10px] text-white/50 leading-relaxed font-mono">
+                  <span className="text-gold font-bold uppercase tracking-widest">Goal.</span>
+                  <span>Transition from <span className="text-white/80 font-bold">111...</span> to <span className="text-white/80 font-bold">000...</span></span>
+                </li>
+              </ul>
+            </div>
+          </GlassCard>
+        ) : (
+          <GlassCard className="p-6 border-white/5 bg-white/[0.02] h-[250px]" glowColor={config.glowColor}>
+            <div className="flex flex-col gap-4 h-full">
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] border-b border-white/5 pb-2 font-sans">Hardware Array</span>
+              <div className="flex flex-wrap justify-center items-center gap-3 mt-4">
+                {switches.map((isOn, index) => (
+                  <SecuritySwitch
+                    key={index}
+                    id={index + 1}
+                    isOn={isOn}
+                    onToggle={() => {}} 
+                    disabled={true}
+                    size="md"
+                  />
+                ))}
+              </div>
+              <div className="mt-auto pt-4 flex items-center justify-between opacity-20 text-[8px] font-mono uppercase tracking-widest">
+                <span>Array Size: {switchCount} / 05</span>
+                <span>Active</span>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Column 3: Execution Log (BFS/DC) or System Overview (Play) */}
+        {mode !== "play" ? (
+          <GlassCard className="p-6 border-white/5 bg-white/[0.02] overflow-hidden flex flex-col h-[250px]" glowColor={config.glowColor}>
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-sans">Execution Log</span>
+                {moveDescriptions.length > 0 && (
+                  <select 
+                    className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[9px] font-mono text-white/40 focus:outline-none hover:border-neon-blue/30 transition-colors mt-1"
+                    onChange={(e) => handleJumpToStep(parseInt(e.target.value))}
+                    value={step}
+                  >
+                    <option value="0">Initial State</option>
+                    {moveDescriptions.map((desc, i) => (
+                      <option key={i} value={i + 1}>Step {i + 1}: {desc}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-neon-blue/20 text-neon-blue bg-neon-blue/5">
+                {moveDescriptions.length} OPS
+              </span>
+            </div>
+            <div ref={moveListRef} className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+              {moveDescriptions.map((desc, i) => {
+                const isCurrent = i === step - 1;
+                return (
+                  <div key={i} className={cn(
+                    "flex items-center gap-3 p-2 rounded-lg border transition-all duration-300",
+                    isCurrent ? "bg-neon-blue/10 border-neon-blue/40" : "bg-white/[0.01] border-white/5",
+                    i < step - 1 && "opacity-20"
+                  )}>
+                    <span className="text-[9px] font-mono font-bold text-white/20 w-4">{(i + 1).toString().padStart(2, '0')}</span>
+                    <span className={cn("text-[11px] font-bold truncate font-mono", isCurrent ? "text-neon-blue" : "text-white/40")}>{desc}</span>
+                  </div>
+                );
+              })}
+              {moveDescriptions.length === 0 && (
+                <p className="text-[10px] font-bold text-white/10 italic text-center mt-12 uppercase tracking-widest">Awaiting Trace</p>
+              )}
+            </div>
+          </GlassCard>
+        ) : (
+          <GlassCard className="p-6 border-white/5 bg-white/[0.02] flex flex-col h-[250px]" glowColor={config.glowColor}>
+            <div className="flex flex-col gap-4 h-full overflow-hidden">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2 shrink-0">
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] font-sans">
+                  Live Violation Feed
+                </span>
+                {hasInitialized && (
+                  <span className="text-[8px] font-mono text-neon-red/60 uppercase tracking-widest">
+                    {violationHistory.length} ERRORS
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex-1 overflow-hidden">
+                {!hasInitialized ? (
+                  <div className="h-full flex flex-col items-center justify-center opacity-20 gap-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-dashed border-white/20 animate-spin-slow" />
+                    <p className="text-[9px] text-white uppercase tracking-widest font-mono">Awaiting System Init</p>
+                  </div>
+                ) : (
+                  <div className="h-full overflow-y-auto space-y-1.5 pr-2 custom-scrollbar">
+                    {violationHistory.map((error, i) => (
+                      <div key={i} className="flex gap-2 text-[9px] font-mono leading-tight border-b border-white/[0.02] pb-1 animate-in fade-in slide-in-from-left-2">
+                        <span className="text-neon-red font-bold">[{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
+                        <span className="text-white/60">{error}</span>
+                      </div>
+                    ))}
+                    {violationHistory.length === 0 && (
+                      <p className="text-[10px] text-white/10 italic text-center mt-12 uppercase tracking-widest">System Log Clear</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </GlassCard>
+        )}
       </div>
 
-      {/* Compact Full Width Main Console */}
+      {/* Main Content Area */}
       <div className="flex flex-col gap-8 w-full">
-        <GlassCard
-          className="p-4 flex flex-col items-center justify-start border-white/5 shadow-2xl relative overflow-hidden h-fit py-8"
-          glowColor={config.glowColor}
-        >
-          <div className="absolute top-4 left-6 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" />
-            <span className="text-[9px] font-bold text-white/10 uppercase tracking-[0.4em]">Array Active</span>
-          </div>
+        {/* Play Mode Switches (Full Width) */}
+        {mode === "play" && (
+          <GlassCard
+            className="p-4 flex flex-col items-center justify-start border-white/5 shadow-2xl relative overflow-hidden h-fit py-8"
+            glowColor={config.glowColor}
+          >
+            <div className="absolute top-4 left-6 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" />
+              <span className="text-[9px] font-bold text-white/10 uppercase tracking-[0.4em]">Array Active</span>
+            </div>
 
-          <div className="flex flex-wrap justify-center items-center gap-6 w-full mt-4">
-            {switches.map((isOn, index) => (
-              <SecuritySwitch
-                key={index}
-                id={index + 1}
-                isOn={isOn}
-                onToggle={() => handleToggle(index)}
-                disabled={mode !== "play" || !isRunning}
-                size={switchCount > 8 ? "sm" : switchCount > 5 ? "md" : "lg"}
-              />
-            ))}
-          </div>
-
-          <div className="absolute bottom-6 right-6 flex items-center gap-4 text-[10px] font-mono text-white/10 uppercase tracking-widest">
-            <span>Security Level: Alpha</span>
-            <div className="w-px h-3 bg-white/10" />
-            <span>v1.0.7-stable</span>
-          </div>
-        </GlassCard>
+            <div className="flex flex-wrap justify-center items-center gap-6 w-full mt-4">
+              {switches.map((isOn, index) => (
+                <SecuritySwitch
+                  key={index}
+                  id={index + 1}
+                  isOn={isOn}
+                  onToggle={() => handleToggle(index)}
+                  disabled={!isRunning}
+                  size={switchCount > 8 ? "sm" : switchCount > 5 ? "md" : "lg"}
+                />
+              ))}
+            </div>
+          </GlassCard>
+        )}
 
         {/* Recurrence Model (D&C only) - Now at the bottom */}
         {mode === "divide" && divideRecurrenceLines.length > 0 && (
@@ -775,7 +824,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
               <div className="shrink-0">
                 <span className="text-xs font-bold text-white/40 uppercase tracking-widest block mb-4">Recurrence Logic</span>
                 <div className="px-4 py-2 rounded-lg bg-neon-red/5 border border-neon-red/20">
-                  <p className="text-[10px] font-mono text-neon-red italic">T(n) = T(n-1) + 2T(n-2) + 1</p>
+                  <p className="text-[10px] font-mono text-neon-red italic">M(n) = M(n-1) + 2M(n-2) + 1</p>
                 </div>
               </div>
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -798,15 +847,94 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
           efficiencySummary={efficiencySummary}
         />
 
-        {/* Theoretical Visualization Section (New) */}
+        {/* Theoretical Visualization Section (Collapsible) */}
         {mode !== "play" && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
-            <ComplexityGraph currentN={switchCount} />
-            {mode === "bfs" ? (
-              <StateSpaceTree n={switchCount} searchTree={searchTree} />
-            ) : (
-              <RecursiveTreeView currentN={switchCount} />
-            )}
+            <div className="flex flex-col gap-4">
+              <GlassCard className={cn(
+                "p-0 border-white/5 bg-white/[0.02] overflow-hidden transition-all duration-500",
+                isGraphOpen ? "ring-1 ring-neon-blue/20" : "hover:bg-white/[0.04]"
+              )} glowColor="blue">
+                <button 
+                  onClick={() => setIsGraphOpen(!isGraphOpen)}
+                  className="flex items-center justify-between p-6 w-full group transition-all duration-300 text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "p-2 rounded-lg transition-all duration-300",
+                      isGraphOpen ? "bg-neon-blue/20 text-neon-blue" : "bg-white/5 text-white/20"
+                    )}>
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] font-sans">Performance Data</span>
+                      <span className={cn(
+                        "text-xs font-black uppercase tracking-widest font-sans transition-colors",
+                        isGraphOpen ? "text-neon-blue" : "text-white/60 group-hover:text-white"
+                      )}>
+                        Scalability Projection
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                     {isGraphOpen && <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" />}
+                     {isGraphOpen ? <ChevronUp className="w-5 h-5 text-neon-blue/40" /> : <ChevronDown className="w-5 h-5 text-white/10 group-hover:text-neon-blue/40 transition-colors" />}
+                  </div>
+                </button>
+                {isGraphOpen && (
+                  <div className="px-6 pb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="p-4 bg-black/40 rounded-xl border border-white/5">
+                      <ComplexityGraph currentN={switchCount} />
+                    </div>
+                  </div>
+                )}
+              </GlassCard>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <GlassCard className={cn(
+                "p-0 border-white/5 bg-white/[0.02] overflow-hidden transition-all duration-500",
+                isTreeOpen ? "ring-1 ring-neon-red/20" : "hover:bg-white/[0.04]"
+              )} glowColor="red">
+                <button 
+                  onClick={() => setIsTreeOpen(!isTreeOpen)}
+                  className="flex items-center justify-between p-6 w-full group transition-all duration-300 text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "p-2 rounded-lg transition-all duration-300",
+                      isTreeOpen ? "bg-neon-red/20 text-neon-red" : "bg-white/5 text-white/20"
+                    )}>
+                      <Network className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] font-sans">Logical Map</span>
+                      <span className={cn(
+                        "text-xs font-black uppercase tracking-widest font-sans transition-colors",
+                        isTreeOpen ? "text-neon-red" : "text-white/60 group-hover:text-white"
+                      )}>
+                        {mode === "bfs" ? "State-Space Tree" : "Recursive structure"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                     {isTreeOpen && <div className="w-1.5 h-1.5 rounded-full bg-neon-red animate-pulse" />}
+                     {isTreeOpen ? <ChevronUp className="w-5 h-5 text-neon-red/40" /> : <ChevronDown className="w-5 h-5 text-white/10 group-hover:text-neon-red/40 transition-colors" />}
+                  </div>
+                </button>
+                {isTreeOpen && (
+                  <div className="px-6 pb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="p-4 bg-black/40 rounded-xl border border-white/5 overflow-hidden">
+                      {mode === "bfs" ? (
+                        <StateSpaceTree n={switchCount} searchTree={searchTree} />
+                      ) : (
+                        <RecursiveTreeView currentN={switchCount} />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </GlassCard>
+            </div>
           </div>
         )}
       </div>

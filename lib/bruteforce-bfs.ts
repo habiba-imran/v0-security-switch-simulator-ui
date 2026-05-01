@@ -65,7 +65,19 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
   const targetKey = toKey(target);
 
   if (startKey === targetKey) {
-    return { minMoves: 0, path: [start] };
+    return { 
+      minMoves: 0, 
+      path: [start],
+      searchTree: [{
+        state: start,
+        id: startKey,
+        parentId: null,
+        isPath: true,
+        isDeadEnd: false,
+        level: 0
+      }],
+      stats: { totalVisited: 1, maxQueueSize: 1 }
+    };
   }
 
   const queue: string[] = [startKey];
@@ -97,8 +109,8 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
     const current = fromKey(currentKey);
     const currentLevel = searchTree.find(n => n.id === currentKey)?.level ?? 0;
 
-    // We limit tree capture to avoid massive memory usage for visualization
-    if (currentLevel >= 4) continue;
+    // We limit tree capture to a reasonable depth for visualization
+    if (currentLevel >= 40) continue;
 
     for (let i = 0; i < n; i += 1) {
       if (!isValidMove(current, i)) continue;
