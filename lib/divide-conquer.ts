@@ -9,6 +9,10 @@ export interface DivideConquerResult {
 }
 
 export function solveDivideConquer(n: number): DivideConquerResult {
+  const path: number[][] = [];
+  const descriptions: string[] = [];
+  const current = Array(n).fill(1); // 1 = ON, 0 = OFF
+  path.push([...current]);
   const stepIndices: number[] = [];
   let totalCalls = 0;
 
@@ -23,42 +27,41 @@ export function solveDivideConquer(n: number): DivideConquerResult {
   };
 
   /**
-   * Recursive function to make switches 1 to k (from right) reach target
-   * @param k - number of switches from right
-   * @param target - 0 for OFF, 1 for ON
+   * Recursive function following the 4-step assignment logic
+   * @param k - current sub-problem size
    */
-  const change = (k: number, target: number) => {
+  const solve = (k: number) => {
     totalCalls += 1;
-    if (k <= 0) return;
     
-    const index = n - k;
-    if (current[index] === target) {
-      change(k - 1, target);
-    } else {
-      if (k === 1) {
-        toggle(k, "Base case", 0);
-      } else if (k === 2) {
-        // Step for n=2 base case
-        if (target === 0) {
-          if (current[n-1] === 1) toggle(1, "Base case S2->OFF", 1);
-          toggle(2, "Base case S2->OFF", 1);
-        } else {
-          toggle(2, "Base case S2->ON", 1);
-          if (current[n-1] === 0) toggle(1, "Base case S2->ON", 1);
-        }
-      } else {
-        // To toggle S_k, we need S_{k-1} ON and S_{k-2...1} OFF
-        change(k - 1, 1); // Make S_{k-1} ON (Step 3/5 logic)
-        change(k - 2, 0); // Make S_{k-2...1} OFF
-        
-        const goal = target === 0 ? "turn OFF" : "turn ON";
-        toggle(k, `Goal was to ${goal} S${k}`, 3); // Main toggle (Step 4)
-        change(k - 1, target); // Solve rest (Step 6)
-      }
+    // Base Case n=1
+    if (k === 1) {
+      toggle(1, "Base Case n=1", 1);
+      return;
     }
+
+    // Base Case n=2
+    if (k === 2) {
+      toggle(2, "Base Case n=2 (Step 1)", 2);
+      toggle(1, "Base Case n=2 (Step 2)", 2);
+      return;
+    }
+
+    // Step 1: Turn OFF last (n-2) switches
+    solve(k - 2); 
+    
+    // Step 2: Toggle switch 1 (current leftmost k)
+    toggle(k, `Step 2: Toggle S${k}`, 6); 
+    
+    // Step 3: Restore last (n-2) switches back to ON
+    // (In this specific problem, solve(k-2) toggles them, calling it again restores them)
+    solve(k - 2); 
+    
+    // Step 4: Solve remaining (n-1) switches recursively
+    solve(k - 1);
   };
 
-  change(n, 0); // Turn all OFF
+  solve(n);
+
   return {
     moves: path.length - 1,
     path,
@@ -71,10 +74,6 @@ export function solveDivideConquer(n: number): DivideConquerResult {
 }
 
 export function divideConquerSwitches(n: number): number {
-  if (!Number.isInteger(n) || n < 1) {
-    throw new Error("n must be a positive integer");
-  }
-
   const memo = new Map<number, number>([
     [1, 1],
     [2, 2],
@@ -82,10 +81,7 @@ export function divideConquerSwitches(n: number): number {
 
   const solve = (k: number): number => {
     const cached = memo.get(k);
-    if (cached !== undefined) {
-      return cached;
-    }
-
+    if (cached !== undefined) return cached;
     const value = solve(k - 1) + 2 * solve(k - 2) + 1;
     memo.set(k, value);
     return value;
@@ -95,28 +91,18 @@ export function divideConquerSwitches(n: number): number {
 }
 
 export function recurrenceSteps(n: number): string[] {
-  if (!Number.isInteger(n) || n < 1) {
-    throw new Error("n must be a positive integer");
-  }
-
   const values = new Map<number, number>([[1, 1]]);
-  const steps = ["T(1) = 1"];
-
+  const steps = ["M(1) = 1"];
   if (n >= 2) {
     values.set(2, 2);
-    steps.push("T(2) = 2");
+    steps.push("M(2) = 2");
   }
-
   for (let k = 3; k <= n; k += 1) {
     const left = values.get(k - 1)!;
     const right = values.get(k - 2)!;
     const current = left + 2 * right + 1;
-
     values.set(k, current);
-    steps.push(
-      `T(${k}) = T(${k - 1}) + 2*T(${k - 2}) + 1 = ${left} + 2*${right} + 1 = ${current}`,
-    );
+    steps.push(`M(${k}) = M(${k-1}) + 2*M(${k-2}) + 1 = ${left} + 2*${right} + 1 = ${current}`);
   }
-
   return steps;
 }

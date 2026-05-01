@@ -113,7 +113,7 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
               <div className="pt-6 border-t border-white/[0.05] grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-gold/30 transition-colors duration-300">
                   <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest block mb-2">Mathematical Model</span>
-                  <p className="text-sm text-white/80 font-mono font-bold tracking-tight">T(n) = T(n-1) + 2T(n-2) + 1</p>
+                  <p className="text-sm text-white/80 font-mono font-bold tracking-tight">M(n) = M(n-1) + 2M(n-2) + 1</p>
                 </div>
                 <div className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-neon-green/30 transition-colors duration-300">
                   <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest block mb-2">Complexity Target</span>
@@ -257,17 +257,28 @@ function ModeButton({
 }
 
 function FloatingParticles() {
+  const [particles, setParticles] = useState<{left: string, top: string, anim: string, delay: string}[]>([]);
+
+  useEffect(() => {
+    setParticles(Array.from({ length: 12 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      anim: `pulseFloat ${10 + Math.random() * 15}s linear infinite`,
+      delay: `${Math.random() * 5}s`,
+    })));
+  }, []);
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 12 }).map((_, i) => (
+      {particles.map((p, i) => (
         <div
           key={i}
           className="absolute w-1 h-1 rounded-full bg-gold/10"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animation: `pulseFloat ${10 + Math.random() * 15}s linear infinite`,
-            animationDelay: `${Math.random() * 5}s`,
+            left: p.left,
+            top: p.top,
+            animation: p.anim,
+            animationDelay: p.delay,
           }}
         />
       ))}

@@ -12,9 +12,10 @@ interface TheoryPanelProps {
     value: string | number;
     description: string;
   }[];
+  efficiencySummary: string;
 }
 
-export function TheoryPanel({ mode, pseudocode, currentLine, stats }: TheoryPanelProps) {
+export function TheoryPanel({ mode, pseudocode, currentLine, stats, efficiencySummary }: TheoryPanelProps) {
   if (mode === "play") return null;
 
   return (
@@ -53,15 +54,15 @@ export function TheoryPanel({ mode, pseudocode, currentLine, stats }: TheoryPane
 
       {/* Efficiency Dashboard */}
       <GlassCard className="p-6 border-white/5 bg-white/[0.02]" glowColor="blue">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between border-b border-white/5 pb-2">
             <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.2em] font-sans">
-              Efficiency Analysis
+              Efficiency Analysis Matrix
             </span>
-            <span className="text-[9px] font-mono text-white/20 uppercase">Real-time Metrics</span>
+            <span className="text-[9px] font-mono text-white/20 uppercase">DAA Assignment Report</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {stats.map((stat, i) => (
               <div key={i} className="p-4 rounded-xl bg-black/20 border border-white/5 flex flex-col gap-1 group hover:border-neon-blue/30 transition-colors">
                 <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">{stat.label}</span>
@@ -71,13 +72,50 @@ export function TheoryPanel({ mode, pseudocode, currentLine, stats }: TheoryPane
             ))}
           </div>
 
-          <div className="mt-4 p-4 rounded-xl bg-neon-blue/5 border border-neon-blue/10">
+          <div className="rounded-xl border border-white/5 bg-black/20 overflow-hidden">
+            <table className="w-full text-[8px] font-mono text-left">
+              <thead className="bg-white/5 text-white/40 uppercase tracking-widest">
+                <tr>
+                  <th className="px-3 py-2 font-black border-r border-white/5">Criterion</th>
+                  <th className="px-3 py-2 font-black border-r border-white/5">BFS (Brute Force)</th>
+                  <th className="px-3 py-2 font-black">Divide & Conquer</th>
+                </tr>
+              </thead>
+              <tbody className="text-white/60">
+                <tr className="border-t border-white/5">
+                  <td className="px-3 py-1.5 font-bold bg-white/5 border-r border-white/5">Time Bound</td>
+                  <td className="px-3 py-1.5 border-r border-white/5 text-neon-blue">Θ(n²·2ⁿ)</td>
+                  <td className="px-3 py-1.5 text-neon-red">Θ(2ⁿ)</td>
+                </tr>
+                <tr className="border-t border-white/5">
+                  <td className="px-3 py-1.5 font-bold bg-white/5 border-r border-white/5">Space Cost</td>
+                  <td className="px-3 py-1.5 border-r border-white/5">O(n·2ⁿ)</td>
+                  <td className="px-3 py-1.5">O(n)</td>
+                </tr>
+                <tr className="border-t border-white/5">
+                  <td className="px-3 py-1.5 font-bold bg-white/5 border-r border-white/5">Optimality</td>
+                  <td className="px-3 py-1.5 border-r border-white/5">BFS Guarantee</td>
+                  <td className="px-3 py-1.5">Proven by Recurrence</td>
+                </tr>
+                <tr className="border-t border-white/5">
+                  <td className="px-3 py-1.5 font-bold bg-white/5 border-r border-white/5">Advantage</td>
+                  <td className="px-3 py-1.5 border-r border-white/5 italic">General Search</td>
+                  <td className="px-3 py-1.5 italic">Scalable Logic</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-4 rounded-xl bg-neon-blue/5 border border-neon-blue/10 flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-neon-blue animate-ping" />
+              <div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse" />
               <span className="text-[10px] font-bold text-neon-blue/80 uppercase tracking-widest font-sans">
-                Asymptotic Bound: {mode === "bfs" ? "Θ(n²·2ⁿ)" : "Θ(2ⁿ)"}
+                Academic Conclusion
               </span>
             </div>
+            <p className="text-[10px] text-white/40 leading-relaxed font-sans italic">
+              {efficiencySummary}
+            </p>
           </div>
         </div>
       </GlassCard>

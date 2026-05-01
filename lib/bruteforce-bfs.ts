@@ -38,9 +38,19 @@ function fromKey(key: string): SwitchBit[] {
   return key.split("").map((bit) => (bit === "1" ? 1 : 0)) as SwitchBit[];
 }
 
+export interface SearchNode {
+  state: SwitchBit[];
+  id: string;
+  parentId: string | null;
+  isPath: boolean;
+  isDeadEnd: boolean;
+  level: number;
+}
+
 export interface BruteForceResult {
   minMoves: number;
   path: SwitchBit[][];
+  searchTree: SearchNode[];
   stats: {
     totalVisited: number;
     maxQueueSize: number;
@@ -66,44 +76,77 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
 
   let maxQueueSize = 1;
 
+  const searchTree: SearchNode[] = [];
+  const startNode: SearchNode = {
+    state: start,
+    id: startKey,
+    parentId: null,
+    isPath: false,
+    isDeadEnd: false,
+    level: 0
+  };
+  searchTree.push(startNode);
+
   while (queueHead < queue.length) {
     maxQueueSize = Math.max(maxQueueSize, queue.length - queueHead);
     const currentKey = queue[queueHead];
     queueHead += 1;
 
-    if (currentKey === targetKey) {
-      break;
-    }
+    if (currentKey === targetKey) break;
 
     const current = fromKey(currentKey);
+    const currentLevel = searchTree.find(n => n.id === currentKey)?.level ?? 0;
+
+    // We limit tree capture to avoid massive memory usage for visualization
+    if (currentLevel >= 4) continue;
 
     for (let i = 0; i < n; i += 1) {
-      if (!isValidMove(current, i)) {
-        continue;
-      }
+      if (!isValidMove(current, i)) continue;
 
       const next = toggle(current, i);
       const nextKey = toKey(next);
-
-      if (!visited.has(nextKey)) {
+      
+      const isNew = !visited.has(nextKey);
+      
+      if (isNew) {
         visited.set(nextKey, currentKey);
         queue.push(nextKey);
       }
+
+      // Record in search tree for visualization
+      searchTree.push({
+        state: next,
+        id: nextKey + "-" + Math.random().toString(36).substr(2, 4), // Unique ID for tree
+        parentId: currentKey,
+        isPath: false,
+        isDeadEnd: !isNew,
+        level: currentLevel + 1
+      });
     }
   }
 
   const path: SwitchBit[][] = [];
-  let currentKey: string | null = targetKey;
+  let pathKey: string | null = targetKey;
+  const pathKeys = new Set<string>();
 
-  while (currentKey !== null) {
-    path.push(fromKey(currentKey));
-    currentKey = visited.get(currentKey) ?? null;
+  while (pathKey !== null) {
+    path.push(fromKey(pathKey));
+    pathKeys.add(pathKey);
+    pathKey = visited.get(pathKey) ?? null;
   }
-
   path.reverse();
+
+  // Mark path nodes in searchTree
+  searchTree.forEach(node => {
+    if (pathKeys.has(node.id.split('-')[0])) {
+      node.isPath = true;
+    }
+  });
+
   return { 
     minMoves: path.length - 1, 
     path,
+    searchTree,
     stats: {
       totalVisited: visited.size,
       maxQueueSize

@@ -7,12 +7,13 @@ import { SecuritySwitch } from "./security-switch";
 import { ToastNotification } from "./toast-notification";
 import { GlassCard } from "./glass-card";
 import { cn } from "@/lib/utils";
-import { solveSwitchesBruteforce, type SwitchBit, type BruteForceResult } from "@/lib/bruteforce-bfs";
+import { solveSwitchesBruteforce, type SwitchBit, type BruteForceResult, type SearchNode } from "@/lib/bruteforce-bfs";
 import { solveDivideConquer, divideConquerSwitches, recurrenceSteps, type DivideConquerResult } from "@/lib/divide-conquer";
 import { TheoryPanel } from "./theory-panel";
 import { BFS_PSEUDOCODE, DC_PSEUDOCODE } from "@/lib/pseudocode";
 import { ComplexityGraph } from "./complexity-graph";
 import { RecursiveTreeView } from "./recursive-tree-view";
+import { StateSpaceTree } from "./state-space-tree";
 
 type GameMode = "play" | "bfs" | "divide";
 
@@ -63,6 +64,8 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
   const [currentLine, setCurrentLine] = useState(-1);
   const [algoStats, setAlgoStats] = useState<{label: string, value: string | number, description: string}[]>([]);
   const [dcStepIndices, setDcStepIndices] = useState<number[]>([]);
+  const [searchTree, setSearchTree] = useState<SearchNode[]>([]);
+  const [efficiencySummary, setEfficiencySummary] = useState("");
 
   // Auto-scroll logic for feeds
   useEffect(() => {
@@ -95,6 +98,14 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       clearPlaybackTimer();
     };
   }, [clearPlaybackTimer]);
+
+  // Auto-initialize on mount for non-play modes
+  useEffect(() => {
+    if (mode !== "play") {
+      handleStart();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   useEffect(() => {
     if (moveListRef.current && step > 0) {
@@ -361,9 +372,31 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
   const handleStart = useCallback(() => {
     clearPlaybackTimer();
 
+    // MANDATORY CONSISTENCY CHECK (PART 5) - Run for all modes
+    const bfsTest = solveSwitchesBruteforce(switchCount);
+    const dcTest = solveDivideConquer(switchCount);
+    const cfTest = Math.floor((Math.pow(2, switchCount + 1) - (1 + Math.pow(-1, switchCount))) / 3);
+    
+    const mismatch = bfsTest.minMoves !== dcTest.moves || dcTest.moves !== cfTest;
+    
+    if (mismatch) {
+      console.error(`ALGORITHM MISMATCH for n=${switchCount}:`, { BFS: bfsTest.minMoves, DC: dcTest.moves, CF: cfTest });
+      setToast({
+        message: `LOGIC ERROR: Results mismatch! BFS:${bfsTest.minMoves}, DC:${dcTest.moves}, CF:${cfTest}`,
+        type: "error",
+        visible: true,
+      });
+      return;
+    }
+
+    setIsWon(false);
+    setHasShownEfficiencyWarning(false);
+    setViolationHistory([]);
+
     if (mode === "bfs") {
       const result = solveSwitchesBruteforce(switchCount) as BruteForceResult;
       setSolutionPath(result.path);
+      setSearchTree(result.searchTree);
       setStep(0);
       setTotalSteps(result.minMoves);
       setCurrentLine(0);
@@ -371,9 +404,11 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       setAlgoStats([
         { label: "States Explored", value: result.stats.totalVisited, description: "Total unique configurations explored level-by-level." },
         { label: "Max Queue Size", value: result.stats.maxQueueSize, description: "Peak memory usage for the BFS frontier." },
-        { label: "Time Complexity", value: "Θ(n²·2ⁿ)", description: "Strict asymptotic bound for BFS state-space search." },
-        { label: "Space Complexity", value: "Θ(n·2ⁿ)", description: "Memory bound for visited set and state storage." }
+        { label: "Theoretical Space", value: `${switchCount * Math.pow(2, switchCount)} bits`, description: "Asymptotic space requirement Θ(n·2ⁿ)." },
+        { label: "Time Complexity", value: "Θ(n²·2ⁿ)", description: "Strict asymptotic bound for BFS state-space search." }
       ]);
+
+      setEfficiencySummary(`BFS explores the state-space of 2ⁿ (${Math.pow(2, switchCount)}) configurations. For each configuration, it validates moves in O(n²) time. This results in a total time complexity of Θ(n²·2ⁿ). It guarantees the optimal path by exploring level-by-level.`);
 
       // Derive move descriptions
       const descriptions = result.path.slice(1).map((state, i) => {
@@ -387,7 +422,7 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       setIsRunning(true);
       setIsPlaying(false);
       updateStateFromPath(0, result.path);
-      setStatusText(`Shortest path found: ${result.minMoves} moves. Click 'Play' for auto or 'Next' to step.`);
+      setStatusText(`Shortest path found: ${result.minMoves} moves. Click 'Next' to step through the shortest path.`);
       setToast({
         message: `Brute Force solution found in ${result.minMoves} moves`,
         type: "info",
@@ -414,17 +449,19 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
 
       setAlgoStats([
         { label: "Recursive Calls", value: result.stats.totalCalls, description: "Total invocations (verified by M(n) recurrence)." },
-        { label: "Max Stack Depth", value: switchCount, description: "Linear space growth based on array size n." },
-        { label: "Time Complexity", value: "Θ(2ⁿ) / O(n)", description: "Θ(2ⁿ) without memoization; O(n) with memoization." },
-        { label: "Space Complexity", value: "O(n)", description: "Stack depth required for recursive decomposition." }
+        { label: "Max Stack Depth", value: switchCount, description: "Linear space growth based on recursion depth." },
+        { label: "Theoretical Space", value: `${switchCount} units`, description: "Asymptotic space requirement O(n)." },
+        { label: "Time Complexity", value: "Θ(2ⁿ) / O(n)", description: "Θ(2ⁿ) without memoization; O(n) with memoization." }
       ]);
+
+      setEfficiencySummary(`The recursive approach breaks the problem into sub-problems of size n-1 and n-2. The recurrence T(n) = T(n-1) + 2T(n-2) + 1 leads to an exponential growth of Θ(2ⁿ). With memoization, we reduce the time complexity to linear O(n) while maintaining O(n) space for the recursion stack.`);
 
       setMoveDescriptions(result.descriptions);
 
       setIsRunning(true);
       setIsPlaying(false);
       updateStateFromPath(0, result.path as SwitchBit[][]);
-      setStatusText(`Recursive solution found: ${result.moves} moves. T(${switchCount}) recurrence initialized.`);
+      setStatusText(`Recursive solution found: ${result.moves} moves. Click 'Next' to trace the logic.`);
       setToast({
         message: `Divide & Conquer logic loaded (${result.moves} moves)`,
         type: "info",
@@ -442,37 +479,16 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setIsPlaying(false);
     setStep(0);
     setSolutionPath([]);
-    
-    // CONSISTENCY CHECK (PART 5)
-    const bfsResult = solveSwitchesBruteforce(switchCount);
-    const dcResult = solveDivideConquer(switchCount);
-    // Closed form formula from assignment
-    const closedFormMoves = Math.floor((Math.pow(2, switchCount + 1) - (1 + Math.pow(-1, switchCount))) / 3);
-    
-    const mismatch = bfsResult.minMoves !== dcResult.moves || dcResult.moves !== closedFormMoves;
-    
-    if (mismatch) {
-      console.error(`ALGORITHM MISMATCH for n=${switchCount}:`, {
-        BFS: bfsResult.minMoves,
-        DC: dcResult.moves,
-        ClosedForm: closedFormMoves
-      });
-      setToast({
-        message: `FATAL ERROR: Algorithm Mismatch! BFS:${bfsResult.minMoves}, DC:${dcResult.moves}, CF:${closedFormMoves}`,
-        type: "error",
-        visible: true,
-      });
-    }
-
-    setTotalSteps(closedFormMoves);
-    setStatusText(`Manual mode initialized. Target: ${closedFormMoves} moves. (Consistency Validated: ${!mismatch})`);
+    setTotalSteps(cfTest);
+    setStatusText(`Manual mode initialized. Target: ${cfTest} moves. (System Logic Verified)`);
   }, [
     advanceBfsStep,
+    advanceDivideStep,
     clearPlaybackTimer,
     completeBfsRun,
+    completeDivideRun,
     mode,
     switchCount,
-    config.title,
     updateStateFromPath,
   ]);
 
@@ -480,6 +496,8 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     clearPlaybackTimer();
     setSwitches(Array(switchCount).fill(true));
     setSolutionPath([]);
+    setSearchTree([]);
+    setEfficiencySummary("");
     setMoveDescriptions([]);
     setDivideRecurrenceLines([]);
     setViolationHistory([]);
@@ -683,25 +701,16 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
                 </button>
               </div>
 
-              {/* Playback Controls - Hidden in Manual Mode */}
+              {/* Playback Controls - Step only */}
               {mode !== "play" && (
                 <div className="flex items-center justify-between gap-3 bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner">
                   <button
-                    onClick={isPlaying ? handlePause : handlePlay}
-                    className={cn(
-                      "flex-1 p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center",
-                      isPlaying ? "bg-neon-red/10 text-neon-red hover:bg-neon-red/20 shadow-[0_0_15px_rgba(255,88,88,0.1)]" : "bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 shadow-[0_0_15px_rgba(88,166,255,0.1)]",
-                    )}
-                  >
-                    {isPlaying ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
-                  </button>
-
-                  <button
                     onClick={handleStep}
-                    disabled={isPlaying}
-                    className="flex-1 p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-10 transition-all duration-300 flex items-center justify-center border border-white/5"
+                    disabled={!isRunning || isWon}
+                    className="flex-[3] p-2.5 rounded-xl bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 shadow-[0_0_15px_rgba(88,166,255,0.1)] flex items-center justify-center gap-2 border border-neon-blue/20 transition-all duration-300 group"
                   >
-                    <StepIcon className="w-5 h-5" />
+                    <StepIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Next Step</span>
                   </button>
 
                   <button
@@ -786,13 +795,18 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
           pseudocode={mode === "bfs" ? BFS_PSEUDOCODE : DC_PSEUDOCODE}
           currentLine={currentLine}
           stats={algoStats}
+          efficiencySummary={efficiencySummary}
         />
 
         {/* Theoretical Visualization Section (New) */}
         {mode !== "play" && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
             <ComplexityGraph currentN={switchCount} />
-            <RecursiveTreeView currentN={switchCount} />
+            {mode === "bfs" ? (
+              <StateSpaceTree n={switchCount} searchTree={searchTree} />
+            ) : (
+              <RecursiveTreeView currentN={switchCount} />
+            )}
           </div>
         )}
       </div>
