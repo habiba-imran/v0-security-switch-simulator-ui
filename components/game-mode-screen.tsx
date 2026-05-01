@@ -7,8 +7,12 @@ import { SecuritySwitch } from "./security-switch";
 import { ToastNotification } from "./toast-notification";
 import { GlassCard } from "./glass-card";
 import { cn } from "@/lib/utils";
-import { solveSwitchesBruteforce, type SwitchBit } from "@/lib/bruteforce-bfs";
-import { solveDivideConquer, divideConquerSwitches, recurrenceSteps } from "@/lib/divide-conquer";
+import { solveSwitchesBruteforce, type SwitchBit, type BruteForceResult } from "@/lib/bruteforce-bfs";
+import { solveDivideConquer, divideConquerSwitches, recurrenceSteps, type DivideConquerResult } from "@/lib/divide-conquer";
+import { TheoryPanel } from "./theory-panel";
+import { BFS_PSEUDOCODE, DC_PSEUDOCODE } from "@/lib/pseudocode";
+import { ComplexityGraph } from "./complexity-graph";
+import { RecursiveTreeView } from "./recursive-tree-view";
 
 type GameMode = "play" | "bfs" | "divide";
 
@@ -56,6 +60,9 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
   const [violationHistory, setViolationHistory] = useState<string[]>([]);
   const [isWon, setIsWon] = useState(false);
   const [hasShownEfficiencyWarning, setHasShownEfficiencyWarning] = useState(false);
+  const [currentLine, setCurrentLine] = useState(-1);
+  const [algoStats, setAlgoStats] = useState<{label: string, value: string | number, description: string}[]>([]);
+  const [dcStepIndices, setDcStepIndices] = useState<number[]>([]);
 
   // Auto-scroll logic for feeds
   useEffect(() => {
@@ -171,6 +178,14 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
 
       const nextStep = prev + 1;
       updateStateFromPath(nextStep, solutionPath);
+      
+      // Update pseudocode line
+      if (nextStep === totalSteps) {
+        setCurrentLine(6); // return
+      } else {
+        setCurrentLine(2); // Dequeue
+        setTimeout(() => setCurrentLine(5), 300); // Toggle
+      }
 
       if (nextStep >= totalSteps) {
         completeBfsRun();
@@ -202,13 +217,18 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
       const nextStep = prev + 1;
       updateStateFromPath(nextStep, solutionPath);
 
+      // Update pseudocode line from mapped indices
+      if (dcStepIndices[nextStep - 1] !== undefined) {
+        setCurrentLine(dcStepIndices[nextStep - 1]);
+      }
+
       if (nextStep >= totalSteps) {
         completeDivideRun(totalSteps);
       }
 
       return nextStep;
     });
-  }, [completeDivideRun, solutionPath, totalSteps, updateStateFromPath]);
+  }, [completeDivideRun, solutionPath, totalSteps, updateStateFromPath, dcStepIndices]);
 
   const startDividePlayback = useCallback(() => {
     if (timerRef.current || step >= totalSteps) {
@@ -342,10 +362,18 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     clearPlaybackTimer();
 
     if (mode === "bfs") {
-      const result = solveSwitchesBruteforce(switchCount);
+      const result = solveSwitchesBruteforce(switchCount) as BruteForceResult;
       setSolutionPath(result.path);
       setStep(0);
       setTotalSteps(result.minMoves);
+      setCurrentLine(0);
+
+      setAlgoStats([
+        { label: "States Explored", value: result.stats.totalVisited, description: "Total unique configurations explored level-by-level." },
+        { label: "Max Queue Size", value: result.stats.maxQueueSize, description: "Peak memory usage for the BFS frontier." },
+        { label: "Time Complexity", value: "Θ(n²·2ⁿ)", description: "Strict asymptotic bound for BFS state-space search." },
+        { label: "Space Complexity", value: "Θ(n·2ⁿ)", description: "Memory bound for visited set and state storage." }
+      ]);
 
       // Derive move descriptions
       const descriptions = result.path.slice(1).map((state, i) => {
@@ -374,13 +402,22 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     }
 
     if (mode === "divide") {
-      const result = solveDivideConquer(switchCount);
+      const result = solveDivideConquer(switchCount) as DivideConquerResult;
       const recurrence = recurrenceSteps(switchCount);
 
       setSolutionPath(result.path as SwitchBit[][]);
       setDivideRecurrenceLines(recurrence);
       setStep(0);
       setTotalSteps(result.moves);
+      setDcStepIndices(result.stepIndices);
+      setCurrentLine(-1);
+
+      setAlgoStats([
+        { label: "Recursive Calls", value: result.stats.totalCalls, description: "Total invocations (verified by M(n) recurrence)." },
+        { label: "Max Stack Depth", value: switchCount, description: "Linear space growth based on array size n." },
+        { label: "Time Complexity", value: "Θ(2ⁿ) / O(n)", description: "Θ(2ⁿ) without memoization; O(n) with memoization." },
+        { label: "Space Complexity", value: "O(n)", description: "Stack depth required for recursive decomposition." }
+      ]);
 
       setMoveDescriptions(result.descriptions);
 
@@ -405,9 +442,30 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
     setIsPlaying(false);
     setStep(0);
     setSolutionPath([]);
-    const minMoves = Math.floor(Math.pow(2, switchCount + 1) / 3);
-    setTotalSteps(minMoves);
-    setStatusText(`Manual mode initialized. Target: ${minMoves} moves.`);
+    
+    // CONSISTENCY CHECK (PART 5)
+    const bfsResult = solveSwitchesBruteforce(switchCount);
+    const dcResult = solveDivideConquer(switchCount);
+    // Closed form formula from assignment
+    const closedFormMoves = Math.floor((Math.pow(2, switchCount + 1) - (1 + Math.pow(-1, switchCount))) / 3);
+    
+    const mismatch = bfsResult.minMoves !== dcResult.moves || dcResult.moves !== closedFormMoves;
+    
+    if (mismatch) {
+      console.error(`ALGORITHM MISMATCH for n=${switchCount}:`, {
+        BFS: bfsResult.minMoves,
+        DC: dcResult.moves,
+        ClosedForm: closedFormMoves
+      });
+      setToast({
+        message: `FATAL ERROR: Algorithm Mismatch! BFS:${bfsResult.minMoves}, DC:${dcResult.moves}, CF:${closedFormMoves}`,
+        type: "error",
+        visible: true,
+      });
+    }
+
+    setTotalSteps(closedFormMoves);
+    setStatusText(`Manual mode initialized. Target: ${closedFormMoves} moves. (Consistency Validated: ${!mismatch})`);
   }, [
     advanceBfsStep,
     clearPlaybackTimer,
@@ -720,6 +778,22 @@ export function GameModeScreen({ mode, onBack }: GameModeScreenProps) {
               </div>
             </div>
           </GlassCard>
+        )}
+
+        {/* Theory & Complexity Section (New) */}
+        <TheoryPanel
+          mode={mode}
+          pseudocode={mode === "bfs" ? BFS_PSEUDOCODE : DC_PSEUDOCODE}
+          currentLine={currentLine}
+          stats={algoStats}
+        />
+
+        {/* Theoretical Visualization Section (New) */}
+        {mode !== "play" && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
+            <ComplexityGraph currentN={switchCount} />
+            <RecursiveTreeView currentN={switchCount} />
+          </div>
         )}
       </div>
 

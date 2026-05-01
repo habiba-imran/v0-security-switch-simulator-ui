@@ -41,6 +41,10 @@ function fromKey(key: string): SwitchBit[] {
 export interface BruteForceResult {
   minMoves: number;
   path: SwitchBit[][];
+  stats: {
+    totalVisited: number;
+    maxQueueSize: number;
+  };
 }
 
 export function solveSwitchesBruteforce(n: number): BruteForceResult {
@@ -60,7 +64,10 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
   // childKey -> parentKey
   const visited = new Map<string, string | null>([[startKey, null]]);
 
+  let maxQueueSize = 1;
+
   while (queueHead < queue.length) {
+    maxQueueSize = Math.max(maxQueueSize, queue.length - queueHead);
     const currentKey = queue[queueHead];
     queueHead += 1;
 
@@ -94,5 +101,12 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
   }
 
   path.reverse();
-  return { minMoves: path.length - 1, path };
+  return { 
+    minMoves: path.length - 1, 
+    path,
+    stats: {
+      totalVisited: visited.size,
+      maxQueueSize
+    }
+  };
 }

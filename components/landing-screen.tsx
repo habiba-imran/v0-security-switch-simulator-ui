@@ -117,7 +117,7 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
                 </div>
                 <div className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-neon-green/30 transition-colors duration-300">
                   <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest block mb-2">Complexity Target</span>
-                  <p className="text-sm text-white/80 font-mono font-bold tracking-tight">O(2^n) Recursive Depth</p>
+                  <p className="text-sm text-white/80 font-mono font-bold tracking-tight">O(2^n) Total Operations</p>
                 </div>
               </div>
             </div>
