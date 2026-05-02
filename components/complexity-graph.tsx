@@ -137,7 +137,7 @@ export function ComplexityGraph({ currentN }: ComplexityGraphProps) {
                       <circle cx={cx} cy={cy} r={5} fill="#d2aa5a" stroke="#fff" strokeWidth={1} className="animate-pulse" />
                     );
                   }
-                  return null;
+                  return <g />;
                 }} 
               />
             </AreaChart>

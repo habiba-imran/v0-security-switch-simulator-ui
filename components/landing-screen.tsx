@@ -88,7 +88,7 @@ export function LandingScreen({ onSelectMode }: LandingScreenProps) {
           {/* High-Contrast Branding Header */}
           <div className="border-b border-white/[0.05] pb-10">
             <h1 className="text-6xl md:text-7xl tracking-tighter leading-none group">
-              <span className="font-black text-white/10 uppercase italic group-hover:text-white/20 transition-all duration-700">Switch</span>
+              <span className="font-black text-white uppercase italic transition-all duration-700">Switch</span>
               <span className="font-bold text-gold/30 ml-2 group-hover:text-gold transition-all duration-700">Sim</span>
             </h1>
           </div>

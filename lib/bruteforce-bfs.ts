@@ -83,15 +83,18 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
   const queue: string[] = [startKey];
   let queueHead = 0;
 
-  // childKey -> parentKey
-  const visited = new Map<string, string | null>([[startKey, null]]);
+  // childKey -> { parentKey, parentUniqueId, currentUniqueId }
+  const visited = new Map<string, { parentKey: string | null, parentUniqueId: string | null, currentUniqueId: string }>([[
+    startKey, 
+    { parentKey: null, parentUniqueId: null, currentUniqueId: `${startKey}-root` }
+  ]]);
 
   let maxQueueSize = 1;
 
   const searchTree: SearchNode[] = [];
   const startNode: SearchNode = {
     state: start,
-    id: startKey,
+    id: `${startKey}-root`,
     parentId: null,
     isPath: false,
     isDeadEnd: false,
@@ -104,32 +107,39 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
     const currentKey = queue[queueHead];
     queueHead += 1;
 
+    const currentVisit = visited.get(currentKey);
+    if (!currentVisit) continue;
+    
+    const currentUniqueId = currentVisit.currentUniqueId;
+    const currentSearchNode = searchTree.find(n => n.id === currentUniqueId);
+    const currentLevel = currentSearchNode?.level ?? 0;
+
     if (currentKey === targetKey) break;
 
     const current = fromKey(currentKey);
-    const currentLevel = searchTree.find(n => n.id === currentKey)?.level ?? 0;
-
-    // We limit tree capture to a reasonable depth for visualization
-    if (currentLevel >= 40) continue;
 
     for (let i = 0; i < n; i += 1) {
       if (!isValidMove(current, i)) continue;
 
       const next = toggle(current, i);
       const nextKey = toKey(next);
-      
       const isNew = !visited.has(nextKey);
+      const nextUniqueId = `${nextKey}-${Math.random().toString(36).substr(2, 6)}`;
       
       if (isNew) {
-        visited.set(nextKey, currentKey);
+        visited.set(nextKey, { 
+          parentKey: currentKey, 
+          parentUniqueId: currentUniqueId, 
+          currentUniqueId: nextUniqueId 
+        });
         queue.push(nextKey);
       }
 
-      // Record in search tree for visualization
+      // Record in search tree
       searchTree.push({
         state: next,
-        id: nextKey + "-" + Math.random().toString(36).substr(2, 4), // Unique ID for tree
-        parentId: currentKey,
+        id: nextUniqueId, 
+        parentId: currentUniqueId,
         isPath: false,
         isDeadEnd: !isNew,
         level: currentLevel + 1
@@ -138,19 +148,23 @@ export function solveSwitchesBruteforce(n: number): BruteForceResult {
   }
 
   const path: SwitchBit[][] = [];
-  let pathKey: string | null = targetKey;
-  const pathKeys = new Set<string>();
-
-  while (pathKey !== null) {
-    path.push(fromKey(pathKey));
-    pathKeys.add(pathKey);
-    pathKey = visited.get(pathKey) ?? null;
+  const pathUniqueIds = new Set<string>();
+  
+  let currentKey: string | null = targetKey;
+  while (currentKey !== null) {
+    const visitInfo = visited.get(currentKey);
+    if (!visitInfo) break;
+    
+    path.push(fromKey(currentKey));
+    pathUniqueIds.add(visitInfo.currentUniqueId);
+    
+    currentKey = visitInfo.parentKey;
   }
   path.reverse();
 
-  // Mark path nodes in searchTree
+  // Mark only the specific nodes on the shortest path
   searchTree.forEach(node => {
-    if (pathKeys.has(node.id.split('-')[0])) {
+    if (pathUniqueIds.has(node.id)) {
       node.isPath = true;
     }
   });
